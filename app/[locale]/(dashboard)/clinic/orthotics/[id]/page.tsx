@@ -27,6 +27,7 @@ import {
 } from "@/lib/hooks/use-clinic-orthotics";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useCanExportClinicPdf } from "@/lib/hooks/use-can-export-clinic-pdf";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicOrthoticsApi } from "@/lib/api/clinic-orthotics";
 import { ROLES } from "@/lib/permissions/roles";
@@ -71,6 +72,7 @@ export default function OrthoticsReceptionPage() {
   const assign = useAssignOrthoticsPractitioners();
 
   const { hasPermission, hasRole, isAdmin } = usePermissions();
+  const canExportPdf = useCanExportClinicPdf();
   const can = (p: Parameters<typeof hasPermission>[0]) => isAdmin() || hasPermission(p);
   // مشرف المركز يتابع الاستقبال وحده — تبويبات التقييم السريري لا تظهر له.
   const jobTitles = useJobTitleCodes();
@@ -161,7 +163,7 @@ export default function OrthoticsReceptionPage() {
           </div>
         </div>
         {/* The sheet carries every clinical tab, so it follows the same rule as they do. */}
-        {!receptionOnly && (
+        {!receptionOnly && canExportPdf && (
           <Button variant="outline" size="sm" className="gap-1.5" disabled={pdfBusy} onClick={exportPdf}>
             {pdfBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             {t("page.exportPdf")}

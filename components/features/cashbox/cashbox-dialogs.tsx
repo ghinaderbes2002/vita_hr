@@ -224,6 +224,8 @@ function CashTransactionForm({
   const [employeeId, setEmployeeId] = useState("");
   const [clientKind, setClientKind] = useState<ClientKind>("patient");
   const [clientId, setClientId] = useState("");
+  // Disbursement only: held for the CEO instead of paid out now.
+  const [needsCeo, setNeedsCeo] = useState(false);
 
   // The money leaves this box: the picked box, or for a refill the main box.
   // Money coming in (receipt, deposit) has no balance to check against.
@@ -246,7 +248,12 @@ function CashTransactionForm({
     if (!valid || amountNumber === undefined) return;
     const base = { cashBoxId: boxId, currencyId, amount: amountNumber, reason: reason.trim() };
     try {
-      if (type === "DISBURSEMENT") await create.mutateAsync({ type, dto: { ...base, targetEmployeeId: employeeId } });
+      if (type === "DISBURSEMENT") {
+        await create.mutateAsync({
+          type,
+          dto: { ...base, targetEmployeeId: employeeId, ...(needsCeo ? { requiresCeoApproval: true } : {}) },
+        });
+      }
       else if (type === "RECEIPT") {
         await create.mutateAsync({
           type,
@@ -326,12 +333,24 @@ function CashTransactionForm({
         <Field label={t("fields.reason")} required>
           <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
+
+        {type === "DISBURSEMENT" && (
+          <label className="flex cursor-pointer items-start gap-2 rounded-md border bg-muted/30 p-3">
+            <Checkbox checked={needsCeo} onCheckedChange={(v) => setNeedsCeo(v === true)} className="mt-0.5" />
+            <span className="space-y-0.5">
+              <span className="block text-sm font-medium">يحتاج موافقة المدير التنفيذي</span>
+              <span className="block text-xs text-muted-foreground">
+                لن يُصرف المبلغ الآن. يُرسل للمدير التنفيذي، ويُصرف عند موافقته، ويصلك إشعار بقراره.
+              </span>
+            </span>
+          </label>
+        )}
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={onDone} disabled={create.isPending}>{t("cancel")}</Button>
         <Button onClick={submit} disabled={!valid || create.isPending}>
           {create.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-          {t("confirm")}
+          {type === "DISBURSEMENT" && needsCeo ? "إرسال للموافقة" : t("confirm")}
         </Button>
       </DialogFooter>
     </>

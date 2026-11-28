@@ -256,9 +256,15 @@ export const PERMISSIONS = {
     SURVEYS_CREATE:   "clinic.patients.surveys.create",
     SURVEYS_VIEW:     "clinic.patients.surveys.view",
   },
+  /** تصدير ملفات PDF لحالات العيادة — يُخفي الأزرار فقط، فالملف يُبنى في المتصفح. */
+  CLINIC_CASES: {
+    EXPORT_PDF: "clinic.cases.export_pdf",
+  },
   CLINIC_PROSTHETICS: {
     CASE_VIEW:         "clinic.prosthetics.case.view",
     NOTIFY_INCOMPLETE_FORM: "clinic.prosthetics.notify_incomplete_form",
+    /** فلترة الحالات الناقصة اعتماداتها: رأي الطبيب المختص، رأي رئيس القسم، اعتماد المدير الطبي. */
+    FILTER_PENDING_APPROVALS: "clinic.prosthetics.filter_pending_approvals",
     /** إعادة فتح حالة مسلَّمة لاستكمال النواقص، وإعادة قفلها (مع التجاوز). */
     REOPEN:            "clinic.prosthetics.reopen",
     /** تعديل رقم الحالة يدوياً (PR-YYYY-NNNN) — مستقلة عن تعديل باقي الحالة. */
@@ -514,6 +520,8 @@ export const PERMISSIONS = {
     TRANSACTIONS_DEPOSIT: "cashbox.transactions.deposit",
     COUNTS_READ:         "cashbox.counts.read",
     COUNTS_CREATE:       "cashbox.counts.create",
+    /** موافقة المدير التنفيذي على أوامر الصرف المعلّقة؛ ومنها تُبنى قائمة من يُشعَر. */
+    CEO_APPROVE:         "cashbox.ceo-approve",
   },
   /** تسعير قطع الأطراف الصناعية: أساس السعر + رقم ثابت لكل قطعة. */
   WAREHOUSE_PRICING_PROSTHETICS: {

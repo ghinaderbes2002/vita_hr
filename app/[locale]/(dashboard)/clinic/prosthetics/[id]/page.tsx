@@ -45,6 +45,7 @@ import { NotifyIncompleteFormButton } from "@/components/clinic/notify-incomplet
 import { ProstheticsReopenControls, ProstheticsCaseCompleteness } from "@/components/clinic/prosthetics-reopen-controls";
 import { ProstheticsCaseNumberEdit } from "@/components/clinic/prosthetics-case-number-edit";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useCanExportClinicPdf } from "@/lib/hooks/use-can-export-clinic-pdf";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
@@ -1568,6 +1569,7 @@ function GaitAnalysisCard({
   caseId, staffList, session, idx, onCancel, patient,
 }: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void; patient?: any }) {
   const t = useTranslations("clinic.prosthetics.case");
+  const canExportPdf = useCanExportClinicPdf();
   const isNew = !session;
   const [editing, setEditing] = useState(isNew);
   const [form, setForm] = useState<GaitForm>(() => session ? gaitFormFromData(session) : { ...INITIAL_GAIT_FORM, phases: {} });
@@ -1707,10 +1709,12 @@ function GaitAnalysisCard({
               )}
             </div>
             <div className="flex gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
-              <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
-                {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                {pdfExporting ? t("gait.loading") : t("gait.exportPdf")}
-              </Button>
+              {canExportPdf && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
+                  {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                  {pdfExporting ? t("gait.loading") : t("gait.exportPdf")}
+                </Button>
+              )}
               {!isArchived && (
                 <Button size="sm" variant="outline" className="gap-1"
                   onClick={() => { setArchiveReason(""); setArchiveOpen(true); }}>
@@ -1770,10 +1774,12 @@ function GaitAnalysisCard({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-1">
-            <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
-              {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-              {pdfExporting ? t("gait.loading") : t("gait.exportPdf")}
-            </Button>
+            {canExportPdf && (
+              <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
+                {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                {pdfExporting ? t("gait.loading") : t("gait.exportPdf")}
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>{t("gait.close")}</Button>
           </div>
         </div>
@@ -3765,6 +3771,7 @@ export default function ProstheticsCasePage() {
   // who can create+view a case (e.g. the centre supervisor) reaches the intake
   // form but not assessment, committee, delivery, etc.
   const { hasPermission, hasAnyPermission, hasRole, isAdmin } = usePermissions();
+  const canExportPdf = useCanExportClinicPdf();
   const { data: myEmployee } = useMyEmployee();
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
   const jobTitles = useJobTitleCodes();
@@ -5199,6 +5206,25 @@ export default function ProstheticsCasePage() {
   // المربعات الأخرى مفتوحة لتُكتب وتُحفظ لاحقاً.
   const committeeOpinionsComplete = hasNewOpinion;
 
+  // A stage tab opens only once the one before it is filled: the committee needs
+  // the assessment (each amputation's limb sheet saved, or the case already past
+  // that stage), and the technical offer needs the committee's final decision.
+  const assessmentDone = committeeDecided
+    || STATUS_ORDER.indexOf(c.status) > STATUS_ORDER.indexOf("ASSESSMENT")
+    || (ampTypes.length > 0
+      && (!ampTypes.includes("UPPER") || upperSaved)
+      && (!ampTypes.includes("LOWER") || lowerSaved));
+  const tabLockReason = (tab: string): string | null => {
+    if (tab === "committee_review" && !assessmentDone) return t("tabs.lockedNeedAssessment");
+    if (tab === "fitting" && !committeeDecided) return t("tabs.lockedNeedCommittee");
+    return null;
+  };
+  const openStageTab = (tab: string) => {
+    const reason = tabLockReason(tab);
+    if (reason) { toast.error(reason); return; }
+    setStageTab(tab);
+  };
+
   const committeeDecisionComplete =
     filledWhen(committeeSuitForm.prosthesisSuitable === true, committeeSuitForm.proposedProsthesisType) &&
     isFilled(decisionForm.finalSummary);
@@ -5334,12 +5360,27 @@ export default function ProstheticsCasePage() {
     setConsumables([]);
   };
 
-  // ما يملكه زر التقييم النهائي نفسه. آراء الأعضاء وقرار المدير الطبي لكلٍّ
-  // منها زر حفظ مستقل، فلا تُحتسب هنا.
-  const finalEvalComplete = allFilled(finalEvalForm as unknown as Record<string, unknown>, [
-    "residualLimbCondition", "suspensionSystemUsed", "socksDelivered", "linersDelivered",
-    "fittingDate", "generalNotes",
-  ]);
+  // Saving moves the case to "جاهز للتسليم", so it needs the whole tab: the
+  // medical info, the physiotherapist's and the prosthetist's opinions and the
+  // manager's audit notes. Left out on purpose: the department head's and the
+  // expert's opinions (optional) and the medical director's approval, which is
+  // signed off separately. Opinions count once typed, saved or not, since this
+  // button saves them too.
+  const FINAL_EVAL_REQUIRED: ReadonlyArray<readonly [string, string]> = [
+    ["residualLimbCondition", "finalEval.residualLimbCondition"],
+    ["suspensionSystemUsed", "finalEval.suspensionSystem"],
+    ["socksDelivered", "finalEval.socks"],
+    ["linersDelivered", "finalEval.liners"],
+    ["fittingDate", "finalEval.fittingDate"],
+    ["generalNotes", "finalEval.generalNotes"],
+    ["physioOpinion", "finalEval.opinion.physioOpinion"],
+    ["prosthetistOpinion", "finalEval.opinion.prosthetistOpinion"],
+    ["managerNotes", "finalEval.managerAuditTitle"],
+  ];
+  const finalEvalMissing = FINAL_EVAL_REQUIRED
+    .filter(([key]) => !isFilled((finalEvalForm as unknown as Record<string, unknown>)[key]))
+    .map(([, label]) => t(label));
+  const finalEvalComplete = finalEvalMissing.length === 0;
 
   const handleSubmitFinalEval = async () => {
     const f = finalEvalForm;
@@ -5401,7 +5442,9 @@ export default function ProstheticsCasePage() {
     const beforeFinalReview = at === -1
       ? !["CLOSED", "CANCELLED"].includes(c.status)
       : at < STATUS_ORDER.indexOf("FINAL_REVIEW");
-    if (beforeFinalReview) await updateStatus.mutateAsync({ id, status: "FINAL_REVIEW" });
+    // The tab can be saved part-filled; only a complete one moves the case on.
+    if (beforeFinalReview && finalEvalComplete) await updateStatus.mutateAsync({ id, status: "FINAL_REVIEW" });
+    else if (beforeFinalReview) toast.info(t("finalEval.savedNotReady"));
   };
 
   const handleSignFinalEval = async (sig: string) => {
@@ -5565,10 +5608,12 @@ export default function ProstheticsCasePage() {
         <div className="flex flex-wrap gap-2">
           <NotifyIncompleteFormButton type="prosthetics" id={id} />
           <ProstheticsReopenControls caseData={c} onJumpToTab={setStageTab} />
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCasePdf} disabled={casePdfExporting}>
-            {casePdfExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {casePdfExporting ? "جاري التصدير..." : "تصدير PDF"}
-          </Button>
+          {canExportPdf && (
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCasePdf} disabled={casePdfExporting}>
+              {casePdfExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {casePdfExporting ? "جاري التصدير..." : "تصدير PDF"}
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
@@ -5617,7 +5662,7 @@ export default function ProstheticsCasePage() {
         </div>
       </div>
 
-      <ProstheticsCaseCompleteness caseData={c} onJumpToTab={setStageTab} />
+      <ProstheticsCaseCompleteness caseData={c} onJumpToTab={openStageTab} />
 
       {/* Tabs by workflow stage */}
       <Tabs
@@ -5627,9 +5672,11 @@ export default function ProstheticsCasePage() {
           const resolved = stageTab ?? (c.status === "CANCELLED" || c.status === "CLOSED"
             ? "timeline"
             : TAB_BY_STATUS[c.status] ?? "intake");
-          return showTab(resolved) ? resolved : "intake";
+          // A locked tab asked for by the URL falls back to the case's own stage.
+          const allowed = tabLockReason(resolved) ? (TAB_BY_STATUS[c.status] ?? "intake") : resolved;
+          return showTab(allowed) ? allowed : "intake";
         })()}
-        onValueChange={setStageTab}
+        onValueChange={openStageTab}
         dir={isRtl ? "rtl" : "ltr"}
       >
         <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
@@ -6145,866 +6192,878 @@ export default function ProstheticsCasePage() {
             </Button>
           </Section>
 
-          {/* ─── Upper Assessment ───────────────────────────────────────────── */}
-          {(() => {
-            if (!ampTypes.includes("UPPER")) return null;
-            const f = upperAssessForm;
-            const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
-            const g = genAssessForm;
-            const setG = (patch: Partial<typeof genAssessForm>) => setGenAssessForm((prev) => ({ ...prev, ...patch }));
-            const isBilateral = f.amputationSide === "BILATERAL";
+          {/* Two departments fill this stage: the prosthetics team writes the limb
+              assessment, the physio team the muscle strength sheet. Form state
+              lives above, so switching tabs loses nothing. */}
+          <Tabs defaultValue="prosthetics_dept" dir="rtl">
+            <TabsList className="w-full grid grid-cols-2 h-auto">
+              <TabsTrigger value="prosthetics_dept" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("assess.deptProsthetics")}</TabsTrigger>
+              <TabsTrigger value="physio_dept" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("assess.deptPhysio")}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="prosthetics_dept" className="mt-4 space-y-4">
+              {/* ─── Upper Assessment ───────────────────────────────────────────── */}
+              {(() => {
+                if (!ampTypes.includes("UPPER")) return null;
+                const f = upperAssessForm;
+                const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
+                const g = genAssessForm;
+                const setG = (patch: Partial<typeof genAssessForm>) => setGenAssessForm((prev) => ({ ...prev, ...patch }));
+                const isBilateral = f.amputationSide === "BILATERAL";
 
-            const renderSideBlock = (
-              sf: ReturnType<typeof emptyUpperForm>,
-              setSf: React.Dispatch<React.SetStateAction<ReturnType<typeof emptyUpperForm>>>,
-              showShared = false
-            ) => {
-              const setS = (patch: Partial<ReturnType<typeof emptyUpperForm>>) => setSf((prev) => ({ ...prev, ...patch }));
-              const togS = (arr: string[], val: string) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
-              return (
-                <>
-                  <PfRow label={t("assess.limbLengthUpper")}>
-                    {[["LONG","long"],["MEDIUM","medium"],["SHORT","short"],["VERY_SHORT","veryShort"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.residualLimbLength === val} label={t(`assess.${lbl}`)} onClick={() => setS({ residualLimbLength: val })} />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.limbShape")}>
-                    {[["BONY","shapeCylindrical"],["SOFT","shapeSoft"],["NORMAL","skin.NORMAL"],["CONICAL_BONY","shapeBonyConical"],["CONICAL_SOFT","shapeSoftConical"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.residualLimbShape === val} label={t(`assess.${lbl}`)} onClick={() => setS({ residualLimbShape: val })} />
-                    ))}
-                  </PfRow>
-                  {showShared && <>
-                    <PfRow label={t("assess.levelNote")}>
-                      <Textarea rows={2} className="text-sm w-full" value={sf.amputationLevelNote} onChange={(e) => setS({ amputationLevelNote: e.target.value })} />
-                    </PfRow>
-                    <PfRow label={t("assess.amputationDate")}>
-                      <div className="flex gap-2 items-center">
-                        <Input
-                          type="number"
-                          placeholder={t("assess.year")}
-                          min={1900} max={2100}
-                          className="h-7 text-sm w-24"
-                          value={g.amputationYear}
-                          onChange={(e) => setG({ amputationYear: e.target.value })}
-                        />
-                        <Select value={g.amputationMonth} onValueChange={(v) => setG({ amputationMonth: v })}>
-                          <SelectTrigger className="h-7 text-sm w-32">
-                            <SelectValue placeholder={t("assess.month")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">{t("assess.noMonth")}</SelectItem>
-                            {MONTH_NUMBERS.map((i) => (
-                              <SelectItem key={i} value={String(i)}>{tMonth(String(i))}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </PfRow>
-                    <PfRow label={t("assess.amputationCause")}>
-                      {[["WAR_INJURY","cause.WAR"],["TRAFFIC_ACCIDENT","cause.TRAFFIC"],["DIABETES","cause.DIABETES_COMPLICATIONS"],["VASCULAR_DISEASE","cause.VASCULAR"],["CONGENITAL","cause.CONGENITAL"],["INFECTION","cause.INFECTION"],["TUMOR","cause.TUMOR"],["WORK_INJURY","cause.WORK"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
-                        <PfSq key={val} checked={g.amputationCause === val} label={t(`assess.${lbl}`)} onClick={() => setG({ amputationCause: val })} />
-                      ))}
-                      {g.amputationCause === "OTHER" && (
-                        <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.causeOther")} value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
-                      )}
-                    </PfRow>
-                    <PfRow label={t("assess.clinicalHistory")}>
-                      <Textarea rows={2} className="text-sm w-full" value={g.clinicalHistory} onChange={(e) => setG({ clinicalHistory: e.target.value })} />
-                    </PfRow>
-                  </>}
-                  <PfDivider label={t("assess.painSection")} />
-                  <PfRow label={t("assess.painSection")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
-                      <Switch checked={sf.painPresent === true} onCheckedChange={(v) => setS({ painPresent: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
-                    </div>
-                    {sf.painPresent && <PfNumPicker value={sf.painIntensity} onChange={(n) => setS({ painIntensity: n })} max={9} />}
-                  </PfRow>
-                  <PfRow label={t("assess.phantomPain")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
-                      <Switch checked={sf.phantomPainPresent === true} onCheckedChange={(v) => setS({ phantomPainPresent: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
-                    </div>
-                    {sf.phantomPainPresent && <PfNumPicker value={sf.phantomPainIntensity} onChange={(n) => setS({ phantomPainIntensity: n })} max={9} />}
-                  </PfRow>
-                  <PfRow label={t("assess.painType")}>
-                    {[["NUMBNESS","pain.NUMBNESS"],["DULL_ACHE","pain.DULL_ACHE"],["HOT_BURNING","pain.HOT_BURNING"],["SHARP_STABBING","pain.SHARP_STABBING"],["PINS","pain.PINS"],["NONE","pain.NONE"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.painTypes.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ painTypes: togS(sf.painTypes, val) })} />
-                    ))}
-                    {sf.painTypes.includes("OTHER") && (
-                      <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.painTypeOther")} value={sf.painTypeOtherDetail} onChange={(e) => setS({ painTypeOtherDetail: e.target.value })} />
-                    )}
-                  </PfRow>
-                  <PfRow label={t("assess.neuroma")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
-                      <Switch checked={sf.neuromaPresent === true} onCheckedChange={(v) => setS({ neuromaPresent: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
-                    </div>
-                  </PfRow>
-                  <PfRow label={t("assess.stumpPosition")}>
-                    <PfSq checked={sf.neuromaPalpable === true} label={t("assess.touchable")} onClick={() => setS({ neuromaPalpable: true })} />
-                    <PfSq checked={sf.neuromaPalpable === false} label={t("assess.notTouchable")} onClick={() => setS({ neuromaPalpable: false })} />
-                  </PfRow>
-                  <PfRow label={t("assess.notes")}>
-                    <Textarea rows={2} className="text-sm w-full" value={sf.skinNotes} onChange={(e) => setS({ skinNotes: e.target.value })} />
-                  </PfRow>
-                  <PfDivider label={t("assess.skinSection")} />
-                  <PfRow label={t("assess.skinAppearance")}>
-                    {[["NORMAL","skin.NORMAL"],["PALE","skin.PALE"],["DRY","skin.DRY"],["INFLAMED","skin.INFLAMED"],["PEELING","skin.PEELING"],["OOZING","skin.OOZING"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.skinAppearance.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ skinAppearance: togS(sf.skinAppearance, val) })} />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.skinColor")}>
-                    {[["NORMAL","skin.NORMAL"],["PALE","skin.PALE"],["YELLOWISH","color.YELLOWISH"],["ERYTHEMATOUS","color.ERYTHEMATOUS"],["CYANOTIC","color.CYANOTIC"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.skinColor.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ skinColor: togS(sf.skinColor, val) })} />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.skinTemp")}>
-                    {[["NORMAL","skin.NORMAL"],["COLD","temp.COLD"],["HOT","temp.HOT"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.skinTemperature === val} label={t(`assess.${lbl}`)} onClick={() => setS({ skinTemperature: val })} />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.grafts")}>
-                    {/* مفتاح نعم/لا بدل مربع التأشير، ومنطقة الطعم تظهر مع "نعم". */}
-                    <div className="flex flex-col gap-1.5 w-full">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                        <Switch checked={sf.hasSkinGrafts} onCheckedChange={(v) => setS({ hasSkinGrafts: v, graftArea: v ? sf.graftArea : "" })} />
-                        <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                      </div>
-                      {sf.hasSkinGrafts && (
-                        <Input
-                          className="h-7 text-sm w-64"
-                          placeholder={t("assess.graftArea")}
-                          value={sf.graftArea}
-                          onChange={(e) => setS({ graftArea: e.target.value })}
-                        />
-                      )}
-                    </div>
-                  </PfRow>
-                  <PfRow label={t("assess.scarCondition")}>
-                    {[["HEALED","scar.HEALED"],["FLEXIBLE","scar.FLEXIBLE"],["HEALED_WITH_PINS","scar.HEALED_WITH_PINS"],["OPEN","scar.OPEN"],["DRY","scar.DRY"],["INFLAMED","scar.INFLAMED"],["OOZING","scar.OOZING"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.scarCondition.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ scarCondition: togS(sf.scarCondition, val) })} />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.comments")}>
-                    <Textarea rows={2} className="text-sm w-full" value={sf.closureNotes} onChange={(e) => setS({ closureNotes: e.target.value })} />
-                  </PfRow>
-                  <PfDivider label={t("assess.generalSection")} />
-                  <PfRow label={t("assess.generalHealth")}>
-                    <Textarea rows={2} className="text-sm w-full" value={sf.generalHealthNotes} onChange={(e) => setS({ generalHealthNotes: e.target.value })} />
-                  </PfRow>
-                  <PfRow label={t("assess.otherLimb")}>
-                    <Textarea rows={2} className="text-sm w-full" value={sf.otherLimbCondition} onChange={(e) => setS({ otherLimbCondition: e.target.value })} />
-                  </PfRow>
-                  {showShared && <>
-                    <PfRow label={t("assess.usesProsthesisNow")}>
-                      <div className="flex flex-col gap-1.5 w-full">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                          <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
-                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                        </div>
-                        {g.currentlyUsingProsthesis === true && (
-                          <Input className="h-7 text-sm w-64" placeholder={t("assess.prosthesisType")} value={sf.prostheticLimbType} onChange={(e) => setS({ prostheticLimbType: e.target.value })} />
-                        )}
-                      </div>
-                    </PfRow>
-                    {g.currentlyUsingProsthesis === false && (
-                      <PfRow label={t("assess.usedProsthesisBefore")}>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                          <Switch checked={g.previouslyUsedProsthesis === true} onCheckedChange={(v) => setG({ previouslyUsedProsthesis: v })} />
-                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                        </div>
-                        {g.previouslyUsedProsthesis === true && (
-                          <Input className="h-7 text-sm w-64 mt-1" placeholder={t("assess.prosthesisSystem")} value={g.previousProsthesisSystemDetail} onChange={(e) => setG({ previousProsthesisSystemDetail: e.target.value })} />
-                        )}
-                      </PfRow>
-                    )}
-                  </>}
-                  <PfRow label={t("assess.compressionBandage")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch checked={sf.usesCompressionBandage} onCheckedChange={(v) => setS({ usesCompressionBandage: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                    </div>
-                  </PfRow>
-                  {showShared && <>
-                    <PfRow label={t("assess.normalState")}>
-                      <PfSq checked={sf.jointsRangeOfMotion === "ACTIVE"} label={t("assess.active")} onClick={() => setS({ jointsRangeOfMotion: "ACTIVE" })} />
-                      <PfSq checked={sf.jointsRangeOfMotion === "SEDENTARY"} label={t("assess.inactive")} onClick={() => setS({ jointsRangeOfMotion: "SEDENTARY" })} />
-                    </PfRow>
-                    <PfRow label={t("assess.activityLevel")}>
-                      {["K0","K1","K2","K3","K4"].map((k) => (
-                        <PfSq key={k} checked={sf.activityLevel === k} label={k} onClick={() => setS({ activityLevel: k })} />
-                      ))}
-                    </PfRow>
-                  </>}
-                </>
-              );
-            };
-
-            return (
-              <Section
-                title={t("assess.upperTitle")}
-                action={savedSectionAction("upperLimb", upperLimbSaved)}
-              >
-                <fieldset disabled={caseLocked || upperLimbSaved} className="contents">
-                <div className="divide-y divide-border/30">
-
-                  {/* جانب البتر */}
-                  <PfRow label={t("assess.side")}>
-                    <PfSq checked={f.amputationSide === "RIGHT"} label={t("assess.right")} onClick={() => set({ amputationSide: "RIGHT" })} />
-                    <PfSq checked={f.amputationSide === "LEFT"} label={t("assess.left")} onClick={() => set({ amputationSide: "LEFT" })} />
-                    <PfSq checked={f.amputationSide === "BILATERAL"} label={t("assess.bilateral")} onClick={() => set({ amputationSide: "BILATERAL" })} />
-                  </PfRow>
-
-                  {/* أسئلة خاصة بالجانب — تُعرض مرتين عند الثنائي */}
-                  {isBilateral ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
-                      <div className="divide-y divide-border/30 border-l border-border/30 pl-4">
-                        <PfDivider label={t("assess.right")} />
-                        {renderSideBlock(upperAssessForm, setUpperAssessForm, true)}
-                      </div>
-                      <div className="divide-y divide-border/30">
-                        <PfDivider label={t("assess.left")} />
-                        {renderSideBlock(upperAssessFormLeft, setUpperAssessFormLeft)}
-                      </div>
-                    </div>
-                  ) : (
-                    renderSideBlock(upperAssessForm, setUpperAssessForm, true)
-                  )}
-
-
-                </div>
-                <SectionSaveButton onSave={handleSaveUpperLimb} busy={patchUpper.isPending || updateCase.isPending} saved={upperLimbSaved} incomplete={!upperLimbComplete || !genAssessComplete} />
-                </fieldset>
-              </Section>
-            );
-          })()}
-
-          {/* ─── Muscle Strength Assessment (Upper only) ───────────────────── */}
-          {(() => {
-            if (!ampTypes.includes("UPPER")) return null;
-            const f = upperAssessForm;
-            const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
-            const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
-            const groups = [...new Set(UPPER_ROM_MOVES.map((m) => m.groupKey))];
-            return (
-              <Section
-                title={t("assess.muscleTitle")}
-                action={savedSectionAction("upperMuscle", upperMuscleSaved)}
-              >
-                <fieldset disabled={caseLocked || upperMuscleSaved} className="contents">
-                <div className="divide-y divide-border/30">
-                  {groups.map((group) => (
-                    <PfRow key={group} label={t(`assess.rom.${group}`)}>
-                      <div className="flex flex-col gap-2 w-full">
-                        {UPPER_ROM_MOVES.filter((m) => m.groupKey === group).map((m) => {
-                          const entry = f.romData[m.key] ?? { selected: false };
-                          return (
-                            <div key={m.key} className="flex items-center gap-3 flex-wrap">
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="w-[15px] h-[15px] checkbox-orange"
-                                  checked={entry.selected}
-                                  onChange={() => setRom(m.key, { ...entry, selected: !entry.selected })}
-                                />
-                                <span className="text-sm">{t(`assess.rom.${m.labelKey}`)}</span>
-                              </label>
-                              {m.hasGrade && entry.selected && (
-                                <div className="flex gap-1 flex-wrap">
-                                  {ROM_GRADES.map((g) => (
-                                    <button key={g} type="button"
-                                      className={`px-1.5 py-0.5 text-xs rounded border transition-colors ${entry.grade === g ? "bg-orange-500 text-white border-orange-500" : "border-border text-muted-foreground hover:bg-muted"}`}
-                                      onClick={() => setRom(m.key, { ...entry, grade: entry.grade === g ? undefined : g })}
-                                    >{g}</button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </PfRow>
-                  ))}
-                  {/* Whole-body questions: asked once here rather than per side. */}
-                  <PfRow label={t("assess.balanceOneSide")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch checked={f.canBalanceOneSide} onCheckedChange={(v) => set({ canBalanceOneSide: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                    </div>
-                  </PfRow>
-                </div>
-                <SectionSaveButton onSave={handleSaveUpperMuscle} busy={patchUpper.isPending} saved={upperMuscleSaved} incomplete={!upperMuscleComplete} />
-                </fieldset>
-              </Section>
-            );
-          })()}
-
-          {/* ─── 3. Lower Assessment ────────────────────────────────────────── */}
-          {(() => {
-            if (!ampTypes.includes("LOWER")) return null;
-            const f = lowerAssessForm;
-            const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));
-            const g = genAssessForm;
-            const setG = (patch: Partial<typeof genAssessForm>) => setGenAssessForm((prev) => ({ ...prev, ...patch }));
-            const isBilateral = f.amputationSide === "BILATERAL";
-
-            const renderSideBlock = (
-              sf: ReturnType<typeof emptyLowerForm>,
-              setSf: React.Dispatch<React.SetStateAction<ReturnType<typeof emptyLowerForm>>>,
-              showTopFields = false
-            ) => {
-              const setS = (patch: Partial<ReturnType<typeof emptyLowerForm>>) => setSf((prev) => ({ ...prev, ...patch }));
-              const togS = (arr: string[], val: string) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
-              return (
-                <>
-                  {showTopFields && (
+                const renderSideBlock = (
+                  sf: ReturnType<typeof emptyUpperForm>,
+                  setSf: React.Dispatch<React.SetStateAction<ReturnType<typeof emptyUpperForm>>>,
+                  showShared = false
+                ) => {
+                  const setS = (patch: Partial<ReturnType<typeof emptyUpperForm>>) => setSf((prev) => ({ ...prev, ...patch }));
+                  const togS = (arr: string[], val: string) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
+                  return (
                     <>
-                      <PfRow label={t("assess.limbLengthLower")}>
-                        {[
-                          ["LONG", "long"],
-                          ["MEDIUM", "medium"],
-                          ["SHORT", "short"],
-                          ["VERY_SHORT", "veryShort"],
-                        ].map(([val, lbl]) => (
-                          <PfSq
-                            key={val}
-                            checked={sf.residualLimbLength === val}
-                            label={t(`assess.${lbl}`)}
-                            onClick={() => setS({ residualLimbLength: val })}
-                          />
-                        ))}
-                      </PfRow>
-                      <PfRow label={t("assess.limbShape")}>
-                        {[
-                          ["BONY", "shapeCylindrical"],
-                          ["SOFT", "shapeSoft"],
-                          ["NORMAL", "skin.NORMAL"],
-                          ["CONICAL_BONY", "shapeBonyConical"],
-                          ["CONICAL_SOFT", "shapeSoftConical"],
-                        ].map(([val, lbl]) => (
-                          <PfSq
-                            key={val}
-                            checked={sf.residualLimbShape === val}
-                            label={t(`assess.${lbl}`)}
-                            onClick={() => setS({ residualLimbShape: val })}
-                          />
-                        ))}
-                      </PfRow>
-                      <PfRow label={t("assess.levelNote")}>
-                        <Textarea
-                          rows={3}
-                          className="text-sm w-full resize-none"
-                          value={sf.amputationLevelNote}
-                          onChange={(e) =>
-                            setS({ amputationLevelNote: e.target.value })
-                          }
-                        />
-                      </PfRow>
-                    </>
-                  )}
-                  <PfRow label={t("assess.painSection")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        {t("assess.absent")}
-                      </span>
-                      <Switch
-                        checked={sf.painPresent === true}
-                        onCheckedChange={(v) => setS({ painPresent: v })}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {t("assess.present")}
-                      </span>
-                    </div>
-                    {sf.painPresent && (
-                      <>
-                        <Input
-                          className="h-7 text-sm w-64 mt-1"
-                          placeholder={t("assess.painArea")}
-                          value={sf.painArea}
-                          onChange={(e) => setS({ painArea: e.target.value })}
-                        />
-                        <div className="mt-1">
-                          <PfNumPicker
-                            value={sf.painIntensity}
-                            onChange={(n) => setS({ painIntensity: n })}
-                            max={10}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </PfRow>
-                  <PfRow label={t("assess.phantomSensation")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        {t("assess.absent")}
-                      </span>
-                      <Switch
-                        checked={sf.phantomSensationPresent === true}
-                        onCheckedChange={(v) => setS(v
-                          ? { phantomSensationPresent: true }
-                          : { phantomSensationPresent: false, phantomPainPresent: false, phantomPainIntensity: 0 })}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {t("assess.present")}
-                      </span>
-                    </div>
-                  </PfRow>
-                  {/* Phantom pain only exists where a phantom sensation does. */}
-                  {sf.phantomSensationPresent === true && (
-                    <PfRow label={t("assess.phantomPain")}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">
-                          {t("assess.absent")}
-                        </span>
-                        <Switch
-                          checked={sf.phantomPainPresent === true}
-                          onCheckedChange={(v) => setS({ phantomPainPresent: v })}
-                        />
-                        <span className="text-sm text-muted-foreground">
-                          {t("assess.present")}
-                        </span>
-                      </div>
-                      {sf.phantomPainPresent && (
-                        <div className="mt-1">
-                          <PfNumPicker
-                            value={sf.phantomPainIntensity}
-                            onChange={(n) => setS({ phantomPainIntensity: n })}
-                            max={9}
-                          />
-                        </div>
-                      )}
-                    </PfRow>
-                  )}
-                  <PfRow label={t("assess.painType")}>
-                    {[
-                      ["NUMBNESS", "pain.NUMBNESS"],
-                      ["DULL_ACHE", "pain.DULL_ACHE"],
-                      ["HOT_BURNING", "pain.HOT_BURNING"],
-                      ["SHARP_STABBING", "pain.SHARP_STABBING"],
-                      ["PINS", "pain.PINS"],
-                      ["NONE", "pain.NONE"],
-                      ["OTHER", "pain.OTHER"],
-                    ].map(([val, lbl]) => (
-                      <PfSq
-                        key={val}
-                        checked={sf.painTypes.includes(val)}
-                        label={t(`assess.${lbl}`)}
-                        onClick={() =>
-                          setS({ painTypes: togS(sf.painTypes, val) })
-                        }
-                      />
-                    ))}
-                    {sf.painTypes.includes("OTHER") && (
-                      <Input
-                        className="h-7 text-sm w-52 mt-1"
-                        placeholder={t("assess.describe")}
-                        value={sf.painTypeOtherDetail}
-                        onChange={(e) =>
-                          setS({ painTypeOtherDetail: e.target.value })
-                        }
-                      />
-                    )}
-                  </PfRow>
-                  <PfRow label={t("assess.neuroma")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        {t("assess.absent")}
-                      </span>
-                      <Switch
-                        checked={sf.neuromaPalpable === true}
-                        onCheckedChange={(v) => setS({ neuromaPalpable: v })}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {t("assess.present")}
-                      </span>
-                    </div>
-                  </PfRow>
-                  <PfRow label={t("assess.loadTolerance")}>
-                    {[
-                      ["PALPABLE", "touchable"],
-                      ["WEIGHT_BEARING", "weightBearing"],
-                      ["NON_WEIGHT_BEARING", "notWeightBearing"],
-                      ["NOT_PALPABLE", "notTouchable"],
-                    ].map(([val, lbl]) => (
-                      <PfSq
-                        key={val}
-                        checked={sf.loadTolerance === val}
-                        label={t(`assess.${lbl}`)}
-                        onClick={() => setS({ loadTolerance: val })}
-                      />
-                    ))}
-                  </PfRow>
-                  {sf.loadTolerance === "WEIGHT_BEARING" && (
-                    <PfRow label={t("assess.ifWeightBearing")}>
-                      {[
-                        ["FULL", "full"],
-                        ["HIGH", "high"],
-                        ["MEDIUM", "mediumLevel"],
-                        ["LOW", "low"],
-                      ].map(([val, lbl]) => (
-                        <PfSq
-                          key={val}
-                          checked={sf.weightBearingLevel === val}
-                          label={t(`assess.${lbl}`)}
-                          onClick={() => setS({ weightBearingLevel: val })}
-                        />
-                      ))}
-                    </PfRow>
-                  )}
-                  <PfRow label={t("assess.notes")}>
-                    <Textarea
-                      rows={2}
-                      className="text-sm w-full"
-                      value={sf.notes}
-                      onChange={(e) => setS({ notes: e.target.value })}
-                    />
-                  </PfRow>
-                  <PfRow label={t("assess.skinAppearanceFull")}>
-                    {[
-                      ["NORMAL", "skin.NORMAL"],
-                      ["PALE", "skin.PALE"],
-                      ["DRY", "skin.DRY"],
-                      ["INFLAMED", "skin.INFLAMED"],
-                      ["PEELING", "skin.PEELING"],
-                      ["OOZING", "skin.OOZING"],
-                    ].map(([val, lbl]) => (
-                      <PfSq
-                        key={val}
-                        checked={sf.skinAppearance.includes(val)}
-                        label={t(`assess.${lbl}`)}
-                        onClick={() =>
-                          setS({ skinAppearance: togS(sf.skinAppearance, val) })
-                        }
-                      />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.skinColor")}>
-                    {[
-                      ["NORMAL", "skin.NORMAL"],
-                      ["PALE", "skin.PALE"],
-                      ["YELLOWISH", "color.YELLOWISH"],
-                      ["ERYTHEMATOUS", "color.ERYTHEMATOUS"],
-                      ["CYANOTIC", "color.CYANOTIC"],
-                    ].map(([val, lbl]) => (
-                      <PfSq
-                        key={val}
-                        checked={sf.skinColor.includes(val)}
-                        label={t(`assess.${lbl}`)}
-                        onClick={() =>
-                          setS({ skinColor: togS(sf.skinColor, val) })
-                        }
-                      />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.bodyTemp")}>
-                    {[
-                      ["NORMAL", "skin.NORMAL"],
-                      ["COLD", "temp.COLD"],
-                      ["HOT", "temp.HOT"],
-                    ].map(([val, lbl]) => (
-                      <PfSq
-                        key={val}
-                        checked={sf.skinTemperature === val}
-                        label={t(`assess.${lbl}`)}
-                        onClick={() => setS({ skinTemperature: val })}
-                      />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.grafts")}>
-                    {/* مفتاح نعم/لا بدل مربع التأشير، ومنطقة الطعم تظهر مع "نعم". */}
-                    <div className="flex flex-col gap-1.5 w-full">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                        <Switch checked={sf.hasSkinGrafts} onCheckedChange={(v) => setS({ hasSkinGrafts: v, graftArea: v ? sf.graftArea : "" })} />
-                        <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                      </div>
-                      {sf.hasSkinGrafts && (
-                        <Input
-                          className="h-7 text-sm w-64"
-                          placeholder={t("assess.graftArea")}
-                          value={sf.graftArea}
-                          onChange={(e) => setS({ graftArea: e.target.value })}
-                        />
-                      )}
-                    </div>
-                  </PfRow>
-                  <PfRow label={t("assess.scarCondition")}>
-                    {[
-                      ["HEALED", "scar.HEALED"],
-                      ["INFLAMED", "scar.INFLAMED"],
-                      ["FLEXIBLE", "scar.FLEXIBLE"],
-                      ["HEALED_WITH_PINS", "scar.HEALED_WITH_PINS"],
-                      ["DRY", "scar.DRY"],
-                      ["OPEN", "scar.OPEN"],
-                      ["OOZING", "scar.OOZING"],
-                    ].map(([val, lbl]) => (
-                      <PfSq
-                        key={val}
-                        checked={sf.scarCondition.includes(val)}
-                        label={t(`assess.${lbl}`)}
-                        onClick={() =>
-                          setS({ scarCondition: togS(sf.scarCondition, val) })
-                        }
-                      />
-                    ))}
-                  </PfRow>
-                  <PfRow label={t("assess.generalHealth")}>
-                    <Textarea
-                      rows={3}
-                      className="text-sm w-full resize-none"
-                      value={sf.generalHealthNotes}
-                      onChange={(e) =>
-                        setS({ generalHealthNotes: e.target.value })
-                      }
-                    />
-                  </PfRow>
-                  <PfRow label={t("assess.otherLimb")}>
-                    <Textarea
-                      rows={3}
-                      className="text-sm w-full resize-none"
-                      value={sf.otherLimbCondition}
-                      onChange={(e) =>
-                        setS({ otherLimbCondition: e.target.value })
-                      }
-                    />
-                  </PfRow>
-                  <PfRow label={t("assess.usesProsthesisNow")}>
-                    <div className="flex flex-col gap-1.5 w-full">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                        <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
-                        <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                      </div>
-                      {g.currentlyUsingProsthesis === true && (
-                        <Input className="h-7 text-sm w-64" placeholder={t("assess.prosthesisType")} value={sf.prostheticLimbType} onChange={(e) => setS({ prostheticLimbType: e.target.value })} />
-                      )}
-                    </div>
-                  </PfRow>
-                  {g.currentlyUsingProsthesis === false && (
-                    <PfRow label={t("assess.usedBeforeIfNo")}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">
-                          {t("assess.no")}
-                        </span>
-                        <Switch
-                          checked={g.previouslyUsedProsthesis === true}
-                          onCheckedChange={(v) =>
-                            setG({ previouslyUsedProsthesis: v })
-                          }
-                        />
-                        <span className="text-sm text-muted-foreground">
-                          {t("assess.yes")}
-                        </span>
-                      </div>
-                      {g.previouslyUsedProsthesis === true && (
-                        <Input
-                          className="h-7 text-sm w-64 mt-1"
-                          placeholder={t("assess.prosthesisSystemPlease")}
-                          value={g.previousProsthesisSystemDetail}
-                          onChange={(e) =>
-                            setG({
-                              previousProsthesisSystemDetail: e.target.value,
-                            })
-                          }
-                        />
-                      )}
-                    </PfRow>
-                  )}
-                  {!ampTypes.includes("UPPER") && <>
-                    <PfRow label={t("assess.normalState")}>
-                      {[["ACTIVE", "active"], ["SEDENTARY", "inactive"]].map(([val, lbl]) => (
-                        <PfSq key={val} checked={sf.jointsRangeOfMotion === val} label={t(`assess.${lbl}`)} onClick={() => setS({ jointsRangeOfMotion: val })} />
-                      ))}
-                    </PfRow>
-                    <PfRow label={t("assess.activityLevel")}>
-                      {["K0", "K1", "K2", "K3", "K4"].map((k) => (
-                        <PfSq key={k} checked={sf.activityLevel === k} label={k} onClick={() => setS({ activityLevel: k })} />
-                      ))}
-                    </PfRow>
-                  </>}
-                </>
-              );
-            };
-
-            return (
-              <Section
-                title={t("assess.lowerTitle")}
-                action={savedSectionAction("lowerLimb", lowerLimbSaved)}
-              >
-                <fieldset disabled={caseLocked || lowerLimbSaved} className="contents">
-                <div className="divide-y divide-border/30">
-
-                  <PfRow label={t("assess.side")}>
-                    <PfSq checked={f.amputationSide === "RIGHT"} label={t("assess.right")} onClick={() => set({ amputationSide: "RIGHT" })} />
-                    <PfSq checked={f.amputationSide === "LEFT"} label={t("assess.left")} onClick={() => set({ amputationSide: "LEFT" })} />
-                    <PfSq checked={f.amputationSide === "BILATERAL"} label={t("assess.bilateral")} onClick={() => set({ amputationSide: "BILATERAL" })} />
-                  </PfRow>
-
-                  {!isBilateral && (
-                    <>
-                      <PfRow label={t("assess.limbLengthLower")}>
+                      <PfRow label={t("assess.limbLengthUpper")}>
                         {[["LONG","long"],["MEDIUM","medium"],["SHORT","short"],["VERY_SHORT","veryShort"]].map(([val, lbl]) => (
-                          <PfSq key={val} checked={f.residualLimbLength === val} label={t(`assess.${lbl}`)} onClick={() => set({ residualLimbLength: val })} />
+                          <PfSq key={val} checked={sf.residualLimbLength === val} label={t(`assess.${lbl}`)} onClick={() => setS({ residualLimbLength: val })} />
                         ))}
                       </PfRow>
                       <PfRow label={t("assess.limbShape")}>
                         {[["BONY","shapeCylindrical"],["SOFT","shapeSoft"],["NORMAL","skin.NORMAL"],["CONICAL_BONY","shapeBonyConical"],["CONICAL_SOFT","shapeSoftConical"]].map(([val, lbl]) => (
-                          <PfSq key={val} checked={f.residualLimbShape === val} label={t(`assess.${lbl}`)} onClick={() => set({ residualLimbShape: val })} />
+                          <PfSq key={val} checked={sf.residualLimbShape === val} label={t(`assess.${lbl}`)} onClick={() => setS({ residualLimbShape: val })} />
                         ))}
                       </PfRow>
-                      <PfRow label={t("assess.levelNote")}>
-                        <Textarea rows={3} className="text-sm w-full resize-none" value={f.amputationLevelNote} onChange={(e) => set({ amputationLevelNote: e.target.value })} />
-                      </PfRow>
-                    </>
-                  )}
-
-                  <PfRow label={t("assess.amputationDate")}>
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        type="number"
-                        placeholder={t("assess.year")}
-                        min={1900} max={2100}
-                        className="h-7 text-sm w-24"
-                        value={g.amputationYear}
-                        onChange={(e) => setG({ amputationYear: e.target.value })}
-                      />
-                      <Select value={g.amputationMonth} onValueChange={(v) => setG({ amputationMonth: v })}>
-                        <SelectTrigger className="h-7 text-sm w-32">
-                          <SelectValue placeholder={t("assess.month")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">{t("assess.noMonth")}</SelectItem>
-                          {MONTH_NUMBERS.map((i) => (
-                            <SelectItem key={i} value={String(i)}>{tMonth(String(i))}</SelectItem>
+                      {showShared && <>
+                        <PfRow label={t("assess.levelNote")}>
+                          <Textarea rows={2} className="text-sm w-full" value={sf.amputationLevelNote} onChange={(e) => setS({ amputationLevelNote: e.target.value })} />
+                        </PfRow>
+                        <PfRow label={t("assess.amputationDate")}>
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              type="number"
+                              placeholder={t("assess.year")}
+                              min={1900} max={2100}
+                              className="h-7 text-sm w-24"
+                              value={g.amputationYear}
+                              onChange={(e) => setG({ amputationYear: e.target.value })}
+                            />
+                            <Select value={g.amputationMonth} onValueChange={(v) => setG({ amputationMonth: v })}>
+                              <SelectTrigger className="h-7 text-sm w-32">
+                                <SelectValue placeholder={t("assess.month")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">{t("assess.noMonth")}</SelectItem>
+                                {MONTH_NUMBERS.map((i) => (
+                                  <SelectItem key={i} value={String(i)}>{tMonth(String(i))}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </PfRow>
+                        <PfRow label={t("assess.amputationCause")}>
+                          {[["WAR_INJURY","cause.WAR"],["TRAFFIC_ACCIDENT","cause.TRAFFIC"],["DIABETES","cause.DIABETES_COMPLICATIONS"],["VASCULAR_DISEASE","cause.VASCULAR"],["CONGENITAL","cause.CONGENITAL"],["INFECTION","cause.INFECTION"],["TUMOR","cause.TUMOR"],["WORK_INJURY","cause.WORK"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
+                            <PfSq key={val} checked={g.amputationCause === val} label={t(`assess.${lbl}`)} onClick={() => setG({ amputationCause: val })} />
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </PfRow>
-                  <PfRow label={t("assess.amputationCause")}>
-                    {[["WAR_INJURY","cause.WAR"],["TRAFFIC_ACCIDENT","cause.TRAFFIC"],["DIABETES","cause.DIABETES"],["VASCULAR_DISEASE","cause.VASCULAR"],["CONGENITAL","cause.CONGENITAL"],["INFECTION","cause.INFECTION"],["TUMOR","cause.TUMOR"],["WORK_INJURY","cause.WORK"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={g.amputationCause === val} label={t(`assess.${lbl}`)} onClick={() => setG({ amputationCause: val })} />
-                    ))}
-                    {g.amputationCause === "OTHER" && (
-                      <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.causeSpecify")} value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
-                    )}
-                  </PfRow>
-                  <PfRow label={t("assess.clinicalHistory")}>
-                    <Textarea rows={2} className="text-sm w-full" value={g.clinicalHistory} onChange={(e) => setG({ clinicalHistory: e.target.value })} />
-                  </PfRow>
-
-                  {isBilateral ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
-                      <div className="divide-y divide-border/30 border-l border-border/30 pl-4">
-                        <PfDivider label={t("assess.right")} />
-                        {renderSideBlock(lowerAssessForm, setLowerAssessForm, true)}
-                      </div>
-                      <div className="divide-y divide-border/30">
-                        <PfDivider label={t("assess.left")} />
-                        {renderSideBlock(lowerAssessFormLeft, setLowerAssessFormLeft, true)}
-                      </div>
-                    </div>
-                  ) : (
-                    renderSideBlock(lowerAssessForm, setLowerAssessForm, false)
-                  )}
-
-                </div>
-                <SectionSaveButton onSave={handleSaveLowerLimb} busy={patchLower.isPending || updateCase.isPending} saved={lowerLimbSaved} incomplete={!lowerLimbComplete || !genAssessComplete} />
-                </fieldset>
-              </Section>
-            );
-          })()}
-
-          {/* ─── 4. Lower Muscle Strength ───────────────────────────────────── */}
-          {(() => {
-            if (!ampTypes.includes("LOWER")) return null;
-            const f = lowerAssessForm;
-            const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));
-            const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
-            const groups = [...new Set(LOWER_ROM_MOVES.map((m) => m.groupKey))];
-            return (
-              <Section
-                title={t("assess.muscleTitle")}
-                action={savedSectionAction("lowerMuscle", lowerMuscleSaved)}
-              >
-                <fieldset disabled={caseLocked || lowerMuscleSaved} className="contents">
-                <div className="divide-y divide-border/30">
-                  {groups.map((group) => (
-                    <PfRow key={group} label={t(`assess.rom.${group}`)}>
-                      <div className="flex flex-col gap-2 w-full">
-                        {LOWER_ROM_MOVES.filter((m) => m.groupKey === group).map((m) => {
-                          const entry = f.romData[m.key] ?? { selected: false };
-                          return (
-                            <div key={m.key} className="flex items-center gap-3 flex-wrap">
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="w-[15px] h-[15px] checkbox-orange"
-                                  checked={entry.selected}
-                                  onChange={() => setRom(m.key, { ...entry, selected: !entry.selected })}
-                                />
-                                <span className="text-sm">{t(`assess.rom.${m.labelKey}`)}</span>
-                              </label>
-                              {m.hasGrade && entry.selected && (
-                                <div className="flex gap-1 flex-wrap">
-                                  {ROM_GRADES.map((g) => (
-                                    <button key={g} type="button"
-                                      className={`px-1.5 py-0.5 text-xs rounded border transition-colors ${entry.grade === g ? "bg-orange-500 text-white border-orange-500" : "border-border text-muted-foreground hover:bg-muted"}`}
-                                      onClick={() => setRom(m.key, { ...entry, grade: entry.grade === g ? undefined : g })}
-                                    >{g}</button>
-                                  ))}
-                                </div>
-                              )}
+                          {g.amputationCause === "OTHER" && (
+                            <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.causeOther")} value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
+                          )}
+                        </PfRow>
+                        <PfRow label={t("assess.clinicalHistory")}>
+                          <Textarea rows={2} className="text-sm w-full" value={g.clinicalHistory} onChange={(e) => setG({ clinicalHistory: e.target.value })} />
+                        </PfRow>
+                      </>}
+                      <PfDivider label={t("assess.painSection")} />
+                      <PfRow label={t("assess.painSection")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
+                          <Switch checked={sf.painPresent === true} onCheckedChange={(v) => setS({ painPresent: v })} />
+                          <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
+                        </div>
+                        {sf.painPresent && <PfNumPicker value={sf.painIntensity} onChange={(n) => setS({ painIntensity: n })} max={9} />}
+                      </PfRow>
+                      <PfRow label={t("assess.phantomPain")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
+                          <Switch checked={sf.phantomPainPresent === true} onCheckedChange={(v) => setS({ phantomPainPresent: v })} />
+                          <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
+                        </div>
+                        {sf.phantomPainPresent && <PfNumPicker value={sf.phantomPainIntensity} onChange={(n) => setS({ phantomPainIntensity: n })} max={9} />}
+                      </PfRow>
+                      <PfRow label={t("assess.painType")}>
+                        {[["NUMBNESS","pain.NUMBNESS"],["DULL_ACHE","pain.DULL_ACHE"],["HOT_BURNING","pain.HOT_BURNING"],["SHARP_STABBING","pain.SHARP_STABBING"],["PINS","pain.PINS"],["NONE","pain.NONE"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={sf.painTypes.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ painTypes: togS(sf.painTypes, val) })} />
+                        ))}
+                        {sf.painTypes.includes("OTHER") && (
+                          <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.painTypeOther")} value={sf.painTypeOtherDetail} onChange={(e) => setS({ painTypeOtherDetail: e.target.value })} />
+                        )}
+                      </PfRow>
+                      <PfRow label={t("assess.neuroma")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
+                          <Switch checked={sf.neuromaPresent === true} onCheckedChange={(v) => setS({ neuromaPresent: v })} />
+                          <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
+                        </div>
+                      </PfRow>
+                      <PfRow label={t("assess.stumpPosition")}>
+                        <PfSq checked={sf.neuromaPalpable === true} label={t("assess.touchable")} onClick={() => setS({ neuromaPalpable: true })} />
+                        <PfSq checked={sf.neuromaPalpable === false} label={t("assess.notTouchable")} onClick={() => setS({ neuromaPalpable: false })} />
+                      </PfRow>
+                      <PfRow label={t("assess.notes")}>
+                        <Textarea rows={2} className="text-sm w-full" value={sf.skinNotes} onChange={(e) => setS({ skinNotes: e.target.value })} />
+                      </PfRow>
+                      <PfDivider label={t("assess.skinSection")} />
+                      <PfRow label={t("assess.skinAppearance")}>
+                        {[["NORMAL","skin.NORMAL"],["PALE","skin.PALE"],["DRY","skin.DRY"],["INFLAMED","skin.INFLAMED"],["PEELING","skin.PEELING"],["OOZING","skin.OOZING"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={sf.skinAppearance.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ skinAppearance: togS(sf.skinAppearance, val) })} />
+                        ))}
+                      </PfRow>
+                      <PfRow label={t("assess.skinColor")}>
+                        {[["NORMAL","skin.NORMAL"],["PALE","skin.PALE"],["YELLOWISH","color.YELLOWISH"],["ERYTHEMATOUS","color.ERYTHEMATOUS"],["CYANOTIC","color.CYANOTIC"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={sf.skinColor.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ skinColor: togS(sf.skinColor, val) })} />
+                        ))}
+                      </PfRow>
+                      <PfRow label={t("assess.skinTemp")}>
+                        {[["NORMAL","skin.NORMAL"],["COLD","temp.COLD"],["HOT","temp.HOT"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={sf.skinTemperature === val} label={t(`assess.${lbl}`)} onClick={() => setS({ skinTemperature: val })} />
+                        ))}
+                      </PfRow>
+                      <PfRow label={t("assess.grafts")}>
+                        {/* مفتاح نعم/لا بدل مربع التأشير، ومنطقة الطعم تظهر مع "نعم". */}
+                        <div className="flex flex-col gap-1.5 w-full">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                            <Switch checked={sf.hasSkinGrafts} onCheckedChange={(v) => setS({ hasSkinGrafts: v, graftArea: v ? sf.graftArea : "" })} />
+                            <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                          </div>
+                          {sf.hasSkinGrafts && (
+                            <Input
+                              className="h-7 text-sm w-64"
+                              placeholder={t("assess.graftArea")}
+                              value={sf.graftArea}
+                              onChange={(e) => setS({ graftArea: e.target.value })}
+                            />
+                          )}
+                        </div>
+                      </PfRow>
+                      <PfRow label={t("assess.scarCondition")}>
+                        {[["HEALED","scar.HEALED"],["FLEXIBLE","scar.FLEXIBLE"],["HEALED_WITH_PINS","scar.HEALED_WITH_PINS"],["OPEN","scar.OPEN"],["DRY","scar.DRY"],["INFLAMED","scar.INFLAMED"],["OOZING","scar.OOZING"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={sf.scarCondition.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ scarCondition: togS(sf.scarCondition, val) })} />
+                        ))}
+                      </PfRow>
+                      <PfRow label={t("assess.comments")}>
+                        <Textarea rows={2} className="text-sm w-full" value={sf.closureNotes} onChange={(e) => setS({ closureNotes: e.target.value })} />
+                      </PfRow>
+                      <PfDivider label={t("assess.generalSection")} />
+                      <PfRow label={t("assess.generalHealth")}>
+                        <Textarea rows={2} className="text-sm w-full" value={sf.generalHealthNotes} onChange={(e) => setS({ generalHealthNotes: e.target.value })} />
+                      </PfRow>
+                      <PfRow label={t("assess.otherLimb")}>
+                        <Textarea rows={2} className="text-sm w-full" value={sf.otherLimbCondition} onChange={(e) => setS({ otherLimbCondition: e.target.value })} />
+                      </PfRow>
+                      {showShared && <>
+                        <PfRow label={t("assess.usesProsthesisNow")}>
+                          <div className="flex flex-col gap-1.5 w-full">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                              <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
+                              <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </PfRow>
-                  ))}
-                  {/* Whole-body questions: asked once here rather than per side. */}
-                  <PfRow label={t("assess.assistiveDevices")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch checked={f.usesAssistiveDevices === true} onCheckedChange={(v) => set({ usesAssistiveDevices: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                            {g.currentlyUsingProsthesis === true && (
+                              <Input className="h-7 text-sm w-64" placeholder={t("assess.prosthesisType")} value={sf.prostheticLimbType} onChange={(e) => setS({ prostheticLimbType: e.target.value })} />
+                            )}
+                          </div>
+                        </PfRow>
+                        {g.currentlyUsingProsthesis === false && (
+                          <PfRow label={t("assess.usedProsthesisBefore")}>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                              <Switch checked={g.previouslyUsedProsthesis === true} onCheckedChange={(v) => setG({ previouslyUsedProsthesis: v })} />
+                              <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                            </div>
+                            {g.previouslyUsedProsthesis === true && (
+                              <Input className="h-7 text-sm w-64 mt-1" placeholder={t("assess.prosthesisSystem")} value={g.previousProsthesisSystemDetail} onChange={(e) => setG({ previousProsthesisSystemDetail: e.target.value })} />
+                            )}
+                          </PfRow>
+                        )}
+                      </>}
+                      <PfRow label={t("assess.compressionBandage")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                          <Switch checked={sf.usesCompressionBandage} onCheckedChange={(v) => setS({ usesCompressionBandage: v })} />
+                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                        </div>
+                      </PfRow>
+                      {showShared && <>
+                        <PfRow label={t("assess.normalState")}>
+                          <PfSq checked={sf.jointsRangeOfMotion === "ACTIVE"} label={t("assess.active")} onClick={() => setS({ jointsRangeOfMotion: "ACTIVE" })} />
+                          <PfSq checked={sf.jointsRangeOfMotion === "SEDENTARY"} label={t("assess.inactive")} onClick={() => setS({ jointsRangeOfMotion: "SEDENTARY" })} />
+                        </PfRow>
+                        <PfRow label={t("assess.activityLevel")}>
+                          {["K0","K1","K2","K3","K4"].map((k) => (
+                            <PfSq key={k} checked={sf.activityLevel === k} label={k} onClick={() => setS({ activityLevel: k })} />
+                          ))}
+                        </PfRow>
+                      </>}
+                    </>
+                  );
+                };
+
+                return (
+                  <Section
+                    title={t("assess.upperTitle")}
+                    action={savedSectionAction("upperLimb", upperLimbSaved)}
+                  >
+                    <fieldset disabled={caseLocked || upperLimbSaved} className="contents">
+                    <div className="divide-y divide-border/30">
+
+                      {/* جانب البتر */}
+                      <PfRow label={t("assess.side")}>
+                        <PfSq checked={f.amputationSide === "RIGHT"} label={t("assess.right")} onClick={() => set({ amputationSide: "RIGHT" })} />
+                        <PfSq checked={f.amputationSide === "LEFT"} label={t("assess.left")} onClick={() => set({ amputationSide: "LEFT" })} />
+                        <PfSq checked={f.amputationSide === "BILATERAL"} label={t("assess.bilateral")} onClick={() => set({ amputationSide: "BILATERAL" })} />
+                      </PfRow>
+
+                      {/* أسئلة خاصة بالجانب — تُعرض مرتين عند الثنائي */}
+                      {isBilateral ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
+                          <div className="divide-y divide-border/30 border-l border-border/30 pl-4">
+                            <PfDivider label={t("assess.right")} />
+                            {renderSideBlock(upperAssessForm, setUpperAssessForm, true)}
+                          </div>
+                          <div className="divide-y divide-border/30">
+                            <PfDivider label={t("assess.left")} />
+                            {renderSideBlock(upperAssessFormLeft, setUpperAssessFormLeft)}
+                          </div>
+                        </div>
+                      ) : (
+                        renderSideBlock(upperAssessForm, setUpperAssessForm, true)
+                      )}
+
+
                     </div>
-                    {f.usesAssistiveDevices && (
-                      <Input
-                        className="h-7 text-sm w-64 mt-1"
-                        placeholder={t("assess.assistiveType")}
-                        value={f.assistiveDeviceTypes}
-                        onChange={(e) => set({ assistiveDeviceTypes: e.target.value })}
-                      />
-                    )}
-                  </PfRow>
-                  <PfRow label={t("assess.stairs")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch checked={f.canClimbStairs === true} onCheckedChange={(v) => set({ canClimbStairs: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                    <SectionSaveButton onSave={handleSaveUpperLimb} busy={patchUpper.isPending || updateCase.isPending} saved={upperLimbSaved} incomplete={!upperLimbComplete || !genAssessComplete} />
+                    </fieldset>
+                  </Section>
+                );
+              })()}
+
+              {/* ─── 3. Lower Assessment ────────────────────────────────────────── */}
+              {(() => {
+                if (!ampTypes.includes("LOWER")) return null;
+                const f = lowerAssessForm;
+                const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));
+                const g = genAssessForm;
+                const setG = (patch: Partial<typeof genAssessForm>) => setGenAssessForm((prev) => ({ ...prev, ...patch }));
+                const isBilateral = f.amputationSide === "BILATERAL";
+
+                const renderSideBlock = (
+                  sf: ReturnType<typeof emptyLowerForm>,
+                  setSf: React.Dispatch<React.SetStateAction<ReturnType<typeof emptyLowerForm>>>,
+                  showTopFields = false
+                ) => {
+                  const setS = (patch: Partial<ReturnType<typeof emptyLowerForm>>) => setSf((prev) => ({ ...prev, ...patch }));
+                  const togS = (arr: string[], val: string) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
+                  return (
+                    <>
+                      {showTopFields && (
+                        <>
+                          <PfRow label={t("assess.limbLengthLower")}>
+                            {[
+                              ["LONG", "long"],
+                              ["MEDIUM", "medium"],
+                              ["SHORT", "short"],
+                              ["VERY_SHORT", "veryShort"],
+                            ].map(([val, lbl]) => (
+                              <PfSq
+                                key={val}
+                                checked={sf.residualLimbLength === val}
+                                label={t(`assess.${lbl}`)}
+                                onClick={() => setS({ residualLimbLength: val })}
+                              />
+                            ))}
+                          </PfRow>
+                          <PfRow label={t("assess.limbShape")}>
+                            {[
+                              ["BONY", "shapeCylindrical"],
+                              ["SOFT", "shapeSoft"],
+                              ["NORMAL", "skin.NORMAL"],
+                              ["CONICAL_BONY", "shapeBonyConical"],
+                              ["CONICAL_SOFT", "shapeSoftConical"],
+                            ].map(([val, lbl]) => (
+                              <PfSq
+                                key={val}
+                                checked={sf.residualLimbShape === val}
+                                label={t(`assess.${lbl}`)}
+                                onClick={() => setS({ residualLimbShape: val })}
+                              />
+                            ))}
+                          </PfRow>
+                          <PfRow label={t("assess.levelNote")}>
+                            <Textarea
+                              rows={3}
+                              className="text-sm w-full resize-none"
+                              value={sf.amputationLevelNote}
+                              onChange={(e) =>
+                                setS({ amputationLevelNote: e.target.value })
+                              }
+                            />
+                          </PfRow>
+                        </>
+                      )}
+                      <PfRow label={t("assess.painSection")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            {t("assess.absent")}
+                          </span>
+                          <Switch
+                            checked={sf.painPresent === true}
+                            onCheckedChange={(v) => setS({ painPresent: v })}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {t("assess.present")}
+                          </span>
+                        </div>
+                        {sf.painPresent && (
+                          <>
+                            <Input
+                              className="h-7 text-sm w-64 mt-1"
+                              placeholder={t("assess.painArea")}
+                              value={sf.painArea}
+                              onChange={(e) => setS({ painArea: e.target.value })}
+                            />
+                            <div className="mt-1">
+                              <PfNumPicker
+                                value={sf.painIntensity}
+                                onChange={(n) => setS({ painIntensity: n })}
+                                max={10}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </PfRow>
+                      <PfRow label={t("assess.phantomSensation")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            {t("assess.absent")}
+                          </span>
+                          <Switch
+                            checked={sf.phantomSensationPresent === true}
+                            onCheckedChange={(v) => setS(v
+                              ? { phantomSensationPresent: true }
+                              : { phantomSensationPresent: false, phantomPainPresent: false, phantomPainIntensity: 0 })}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {t("assess.present")}
+                          </span>
+                        </div>
+                      </PfRow>
+                      {/* Phantom pain only exists where a phantom sensation does. */}
+                      {sf.phantomSensationPresent === true && (
+                        <PfRow label={t("assess.phantomPain")}>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">
+                              {t("assess.absent")}
+                            </span>
+                            <Switch
+                              checked={sf.phantomPainPresent === true}
+                              onCheckedChange={(v) => setS({ phantomPainPresent: v })}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {t("assess.present")}
+                            </span>
+                          </div>
+                          {sf.phantomPainPresent && (
+                            <div className="mt-1">
+                              <PfNumPicker
+                                value={sf.phantomPainIntensity}
+                                onChange={(n) => setS({ phantomPainIntensity: n })}
+                                max={9}
+                              />
+                            </div>
+                          )}
+                        </PfRow>
+                      )}
+                      <PfRow label={t("assess.painType")}>
+                        {[
+                          ["NUMBNESS", "pain.NUMBNESS"],
+                          ["DULL_ACHE", "pain.DULL_ACHE"],
+                          ["HOT_BURNING", "pain.HOT_BURNING"],
+                          ["SHARP_STABBING", "pain.SHARP_STABBING"],
+                          ["PINS", "pain.PINS"],
+                          ["NONE", "pain.NONE"],
+                          ["OTHER", "pain.OTHER"],
+                        ].map(([val, lbl]) => (
+                          <PfSq
+                            key={val}
+                            checked={sf.painTypes.includes(val)}
+                            label={t(`assess.${lbl}`)}
+                            onClick={() =>
+                              setS({ painTypes: togS(sf.painTypes, val) })
+                            }
+                          />
+                        ))}
+                        {sf.painTypes.includes("OTHER") && (
+                          <Input
+                            className="h-7 text-sm w-52 mt-1"
+                            placeholder={t("assess.describe")}
+                            value={sf.painTypeOtherDetail}
+                            onChange={(e) =>
+                              setS({ painTypeOtherDetail: e.target.value })
+                            }
+                          />
+                        )}
+                      </PfRow>
+                      <PfRow label={t("assess.neuroma")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            {t("assess.absent")}
+                          </span>
+                          <Switch
+                            checked={sf.neuromaPalpable === true}
+                            onCheckedChange={(v) => setS({ neuromaPalpable: v })}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {t("assess.present")}
+                          </span>
+                        </div>
+                      </PfRow>
+                      <PfRow label={t("assess.loadTolerance")}>
+                        {[
+                          ["PALPABLE", "touchable"],
+                          ["WEIGHT_BEARING", "weightBearing"],
+                          ["NON_WEIGHT_BEARING", "notWeightBearing"],
+                          ["NOT_PALPABLE", "notTouchable"],
+                        ].map(([val, lbl]) => (
+                          <PfSq
+                            key={val}
+                            checked={sf.loadTolerance === val}
+                            label={t(`assess.${lbl}`)}
+                            onClick={() => setS({ loadTolerance: val })}
+                          />
+                        ))}
+                      </PfRow>
+                      {sf.loadTolerance === "WEIGHT_BEARING" && (
+                        <PfRow label={t("assess.ifWeightBearing")}>
+                          {[
+                            ["FULL", "full"],
+                            ["HIGH", "high"],
+                            ["MEDIUM", "mediumLevel"],
+                            ["LOW", "low"],
+                          ].map(([val, lbl]) => (
+                            <PfSq
+                              key={val}
+                              checked={sf.weightBearingLevel === val}
+                              label={t(`assess.${lbl}`)}
+                              onClick={() => setS({ weightBearingLevel: val })}
+                            />
+                          ))}
+                        </PfRow>
+                      )}
+                      <PfRow label={t("assess.notes")}>
+                        <Textarea
+                          rows={2}
+                          className="text-sm w-full"
+                          value={sf.notes}
+                          onChange={(e) => setS({ notes: e.target.value })}
+                        />
+                      </PfRow>
+                      <PfRow label={t("assess.skinAppearanceFull")}>
+                        {[
+                          ["NORMAL", "skin.NORMAL"],
+                          ["PALE", "skin.PALE"],
+                          ["DRY", "skin.DRY"],
+                          ["INFLAMED", "skin.INFLAMED"],
+                          ["PEELING", "skin.PEELING"],
+                          ["OOZING", "skin.OOZING"],
+                        ].map(([val, lbl]) => (
+                          <PfSq
+                            key={val}
+                            checked={sf.skinAppearance.includes(val)}
+                            label={t(`assess.${lbl}`)}
+                            onClick={() =>
+                              setS({ skinAppearance: togS(sf.skinAppearance, val) })
+                            }
+                          />
+                        ))}
+                      </PfRow>
+                      <PfRow label={t("assess.skinColor")}>
+                        {[
+                          ["NORMAL", "skin.NORMAL"],
+                          ["PALE", "skin.PALE"],
+                          ["YELLOWISH", "color.YELLOWISH"],
+                          ["ERYTHEMATOUS", "color.ERYTHEMATOUS"],
+                          ["CYANOTIC", "color.CYANOTIC"],
+                        ].map(([val, lbl]) => (
+                          <PfSq
+                            key={val}
+                            checked={sf.skinColor.includes(val)}
+                            label={t(`assess.${lbl}`)}
+                            onClick={() =>
+                              setS({ skinColor: togS(sf.skinColor, val) })
+                            }
+                          />
+                        ))}
+                      </PfRow>
+                      <PfRow label={t("assess.bodyTemp")}>
+                        {[
+                          ["NORMAL", "skin.NORMAL"],
+                          ["COLD", "temp.COLD"],
+                          ["HOT", "temp.HOT"],
+                        ].map(([val, lbl]) => (
+                          <PfSq
+                            key={val}
+                            checked={sf.skinTemperature === val}
+                            label={t(`assess.${lbl}`)}
+                            onClick={() => setS({ skinTemperature: val })}
+                          />
+                        ))}
+                      </PfRow>
+                      <PfRow label={t("assess.grafts")}>
+                        {/* مفتاح نعم/لا بدل مربع التأشير، ومنطقة الطعم تظهر مع "نعم". */}
+                        <div className="flex flex-col gap-1.5 w-full">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                            <Switch checked={sf.hasSkinGrafts} onCheckedChange={(v) => setS({ hasSkinGrafts: v, graftArea: v ? sf.graftArea : "" })} />
+                            <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                          </div>
+                          {sf.hasSkinGrafts && (
+                            <Input
+                              className="h-7 text-sm w-64"
+                              placeholder={t("assess.graftArea")}
+                              value={sf.graftArea}
+                              onChange={(e) => setS({ graftArea: e.target.value })}
+                            />
+                          )}
+                        </div>
+                      </PfRow>
+                      <PfRow label={t("assess.scarCondition")}>
+                        {[
+                          ["HEALED", "scar.HEALED"],
+                          ["INFLAMED", "scar.INFLAMED"],
+                          ["FLEXIBLE", "scar.FLEXIBLE"],
+                          ["HEALED_WITH_PINS", "scar.HEALED_WITH_PINS"],
+                          ["DRY", "scar.DRY"],
+                          ["OPEN", "scar.OPEN"],
+                          ["OOZING", "scar.OOZING"],
+                        ].map(([val, lbl]) => (
+                          <PfSq
+                            key={val}
+                            checked={sf.scarCondition.includes(val)}
+                            label={t(`assess.${lbl}`)}
+                            onClick={() =>
+                              setS({ scarCondition: togS(sf.scarCondition, val) })
+                            }
+                          />
+                        ))}
+                      </PfRow>
+                      <PfRow label={t("assess.generalHealth")}>
+                        <Textarea
+                          rows={3}
+                          className="text-sm w-full resize-none"
+                          value={sf.generalHealthNotes}
+                          onChange={(e) =>
+                            setS({ generalHealthNotes: e.target.value })
+                          }
+                        />
+                      </PfRow>
+                      <PfRow label={t("assess.otherLimb")}>
+                        <Textarea
+                          rows={3}
+                          className="text-sm w-full resize-none"
+                          value={sf.otherLimbCondition}
+                          onChange={(e) =>
+                            setS({ otherLimbCondition: e.target.value })
+                          }
+                        />
+                      </PfRow>
+                      <PfRow label={t("assess.usesProsthesisNow")}>
+                        <div className="flex flex-col gap-1.5 w-full">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                            <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
+                            <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                          </div>
+                          {g.currentlyUsingProsthesis === true && (
+                            <Input className="h-7 text-sm w-64" placeholder={t("assess.prosthesisType")} value={sf.prostheticLimbType} onChange={(e) => setS({ prostheticLimbType: e.target.value })} />
+                          )}
+                        </div>
+                      </PfRow>
+                      {g.currentlyUsingProsthesis === false && (
+                        <PfRow label={t("assess.usedBeforeIfNo")}>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">
+                              {t("assess.no")}
+                            </span>
+                            <Switch
+                              checked={g.previouslyUsedProsthesis === true}
+                              onCheckedChange={(v) =>
+                                setG({ previouslyUsedProsthesis: v })
+                              }
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {t("assess.yes")}
+                            </span>
+                          </div>
+                          {g.previouslyUsedProsthesis === true && (
+                            <Input
+                              className="h-7 text-sm w-64 mt-1"
+                              placeholder={t("assess.prosthesisSystemPlease")}
+                              value={g.previousProsthesisSystemDetail}
+                              onChange={(e) =>
+                                setG({
+                                  previousProsthesisSystemDetail: e.target.value,
+                                })
+                              }
+                            />
+                          )}
+                        </PfRow>
+                      )}
+                      {!ampTypes.includes("UPPER") && <>
+                        <PfRow label={t("assess.normalState")}>
+                          {[["ACTIVE", "active"], ["SEDENTARY", "inactive"]].map(([val, lbl]) => (
+                            <PfSq key={val} checked={sf.jointsRangeOfMotion === val} label={t(`assess.${lbl}`)} onClick={() => setS({ jointsRangeOfMotion: val })} />
+                          ))}
+                        </PfRow>
+                        <PfRow label={t("assess.activityLevel")}>
+                          {["K0", "K1", "K2", "K3", "K4"].map((k) => (
+                            <PfSq key={k} checked={sf.activityLevel === k} label={k} onClick={() => setS({ activityLevel: k })} />
+                          ))}
+                        </PfRow>
+                      </>}
+                    </>
+                  );
+                };
+
+                return (
+                  <Section
+                    title={t("assess.lowerTitle")}
+                    action={savedSectionAction("lowerLimb", lowerLimbSaved)}
+                  >
+                    <fieldset disabled={caseLocked || lowerLimbSaved} className="contents">
+                    <div className="divide-y divide-border/30">
+
+                      <PfRow label={t("assess.side")}>
+                        <PfSq checked={f.amputationSide === "RIGHT"} label={t("assess.right")} onClick={() => set({ amputationSide: "RIGHT" })} />
+                        <PfSq checked={f.amputationSide === "LEFT"} label={t("assess.left")} onClick={() => set({ amputationSide: "LEFT" })} />
+                        <PfSq checked={f.amputationSide === "BILATERAL"} label={t("assess.bilateral")} onClick={() => set({ amputationSide: "BILATERAL" })} />
+                      </PfRow>
+
+                      {!isBilateral && (
+                        <>
+                          <PfRow label={t("assess.limbLengthLower")}>
+                            {[["LONG","long"],["MEDIUM","medium"],["SHORT","short"],["VERY_SHORT","veryShort"]].map(([val, lbl]) => (
+                              <PfSq key={val} checked={f.residualLimbLength === val} label={t(`assess.${lbl}`)} onClick={() => set({ residualLimbLength: val })} />
+                            ))}
+                          </PfRow>
+                          <PfRow label={t("assess.limbShape")}>
+                            {[["BONY","shapeCylindrical"],["SOFT","shapeSoft"],["NORMAL","skin.NORMAL"],["CONICAL_BONY","shapeBonyConical"],["CONICAL_SOFT","shapeSoftConical"]].map(([val, lbl]) => (
+                              <PfSq key={val} checked={f.residualLimbShape === val} label={t(`assess.${lbl}`)} onClick={() => set({ residualLimbShape: val })} />
+                            ))}
+                          </PfRow>
+                          <PfRow label={t("assess.levelNote")}>
+                            <Textarea rows={3} className="text-sm w-full resize-none" value={f.amputationLevelNote} onChange={(e) => set({ amputationLevelNote: e.target.value })} />
+                          </PfRow>
+                        </>
+                      )}
+
+                      <PfRow label={t("assess.amputationDate")}>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="number"
+                            placeholder={t("assess.year")}
+                            min={1900} max={2100}
+                            className="h-7 text-sm w-24"
+                            value={g.amputationYear}
+                            onChange={(e) => setG({ amputationYear: e.target.value })}
+                          />
+                          <Select value={g.amputationMonth} onValueChange={(v) => setG({ amputationMonth: v })}>
+                            <SelectTrigger className="h-7 text-sm w-32">
+                              <SelectValue placeholder={t("assess.month")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">{t("assess.noMonth")}</SelectItem>
+                              {MONTH_NUMBERS.map((i) => (
+                                <SelectItem key={i} value={String(i)}>{tMonth(String(i))}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </PfRow>
+                      <PfRow label={t("assess.amputationCause")}>
+                        {[["WAR_INJURY","cause.WAR"],["TRAFFIC_ACCIDENT","cause.TRAFFIC"],["DIABETES","cause.DIABETES"],["VASCULAR_DISEASE","cause.VASCULAR"],["CONGENITAL","cause.CONGENITAL"],["INFECTION","cause.INFECTION"],["TUMOR","cause.TUMOR"],["WORK_INJURY","cause.WORK"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={g.amputationCause === val} label={t(`assess.${lbl}`)} onClick={() => setG({ amputationCause: val })} />
+                        ))}
+                        {g.amputationCause === "OTHER" && (
+                          <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.causeSpecify")} value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
+                        )}
+                      </PfRow>
+                      <PfRow label={t("assess.clinicalHistory")}>
+                        <Textarea rows={2} className="text-sm w-full" value={g.clinicalHistory} onChange={(e) => setG({ clinicalHistory: e.target.value })} />
+                      </PfRow>
+
+                      {isBilateral ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
+                          <div className="divide-y divide-border/30 border-l border-border/30 pl-4">
+                            <PfDivider label={t("assess.right")} />
+                            {renderSideBlock(lowerAssessForm, setLowerAssessForm, true)}
+                          </div>
+                          <div className="divide-y divide-border/30">
+                            <PfDivider label={t("assess.left")} />
+                            {renderSideBlock(lowerAssessFormLeft, setLowerAssessFormLeft, true)}
+                          </div>
+                        </div>
+                      ) : (
+                        renderSideBlock(lowerAssessForm, setLowerAssessForm, false)
+                      )}
+
                     </div>
-                  </PfRow>
-                  <PfRow label={t("assess.balanceOneSide")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch checked={f.canBalanceOneSide === true} onCheckedChange={(v) => set({ canBalanceOneSide: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                    <SectionSaveButton onSave={handleSaveLowerLimb} busy={patchLower.isPending || updateCase.isPending} saved={lowerLimbSaved} incomplete={!lowerLimbComplete || !genAssessComplete} />
+                    </fieldset>
+                  </Section>
+                );
+              })()}
+            </TabsContent>
+            <TabsContent value="physio_dept" className="mt-4 space-y-4">
+              {/* ─── Muscle Strength Assessment (Upper only) ───────────────────── */}
+              {(() => {
+                if (!ampTypes.includes("UPPER")) return null;
+                const f = upperAssessForm;
+                const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
+                const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
+                const groups = [...new Set(UPPER_ROM_MOVES.map((m) => m.groupKey))];
+                return (
+                  <Section
+                    title={t("assess.muscleTitle")}
+                    action={savedSectionAction("upperMuscle", upperMuscleSaved)}
+                  >
+                    <fieldset disabled={caseLocked || upperMuscleSaved} className="contents">
+                    <div className="divide-y divide-border/30">
+                      {groups.map((group) => (
+                        <PfRow key={group} label={t(`assess.rom.${group}`)}>
+                          <div className="flex flex-col gap-2 w-full">
+                            {UPPER_ROM_MOVES.filter((m) => m.groupKey === group).map((m) => {
+                              const entry = f.romData[m.key] ?? { selected: false };
+                              return (
+                                <div key={m.key} className="flex items-center gap-3 flex-wrap">
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" className="w-[15px] h-[15px] checkbox-orange"
+                                      checked={entry.selected}
+                                      onChange={() => setRom(m.key, { ...entry, selected: !entry.selected })}
+                                    />
+                                    <span className="text-sm">{t(`assess.rom.${m.labelKey}`)}</span>
+                                  </label>
+                                  {m.hasGrade && entry.selected && (
+                                    <div className="flex gap-1 flex-wrap">
+                                      {ROM_GRADES.map((g) => (
+                                        <button key={g} type="button"
+                                          className={`px-1.5 py-0.5 text-xs rounded border transition-colors ${entry.grade === g ? "bg-orange-500 text-white border-orange-500" : "border-border text-muted-foreground hover:bg-muted"}`}
+                                          onClick={() => setRom(m.key, { ...entry, grade: entry.grade === g ? undefined : g })}
+                                        >{g}</button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </PfRow>
+                      ))}
+                      {/* Whole-body questions: asked once here rather than per side. */}
+                      <PfRow label={t("assess.balanceOneSide")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                          <Switch checked={f.canBalanceOneSide} onCheckedChange={(v) => set({ canBalanceOneSide: v })} />
+                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                        </div>
+                      </PfRow>
                     </div>
-                  </PfRow>
-                  <PfRow label={t("assess.notes")}>
-                    <Textarea rows={2} className="text-sm w-full" value={f.muscleMotionNotes} onChange={(e) => set({ muscleMotionNotes: e.target.value })} />
-                  </PfRow>
-                </div>
-                <SectionSaveButton onSave={handleSaveLowerMuscle} busy={patchLower.isPending} saved={lowerMuscleSaved} incomplete={!lowerMuscleComplete} />
-                </fieldset>
-              </Section>
-            );
-          })()}
+                    <SectionSaveButton onSave={handleSaveUpperMuscle} busy={patchUpper.isPending} saved={upperMuscleSaved} incomplete={!upperMuscleComplete} />
+                    </fieldset>
+                  </Section>
+                );
+              })()}
+
+              {/* ─── 4. Lower Muscle Strength ───────────────────────────────────── */}
+              {(() => {
+                if (!ampTypes.includes("LOWER")) return null;
+                const f = lowerAssessForm;
+                const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));
+                const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
+                const groups = [...new Set(LOWER_ROM_MOVES.map((m) => m.groupKey))];
+                return (
+                  <Section
+                    title={t("assess.muscleTitle")}
+                    action={savedSectionAction("lowerMuscle", lowerMuscleSaved)}
+                  >
+                    <fieldset disabled={caseLocked || lowerMuscleSaved} className="contents">
+                    <div className="divide-y divide-border/30">
+                      {groups.map((group) => (
+                        <PfRow key={group} label={t(`assess.rom.${group}`)}>
+                          <div className="flex flex-col gap-2 w-full">
+                            {LOWER_ROM_MOVES.filter((m) => m.groupKey === group).map((m) => {
+                              const entry = f.romData[m.key] ?? { selected: false };
+                              return (
+                                <div key={m.key} className="flex items-center gap-3 flex-wrap">
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" className="w-[15px] h-[15px] checkbox-orange"
+                                      checked={entry.selected}
+                                      onChange={() => setRom(m.key, { ...entry, selected: !entry.selected })}
+                                    />
+                                    <span className="text-sm">{t(`assess.rom.${m.labelKey}`)}</span>
+                                  </label>
+                                  {m.hasGrade && entry.selected && (
+                                    <div className="flex gap-1 flex-wrap">
+                                      {ROM_GRADES.map((g) => (
+                                        <button key={g} type="button"
+                                          className={`px-1.5 py-0.5 text-xs rounded border transition-colors ${entry.grade === g ? "bg-orange-500 text-white border-orange-500" : "border-border text-muted-foreground hover:bg-muted"}`}
+                                          onClick={() => setRom(m.key, { ...entry, grade: entry.grade === g ? undefined : g })}
+                                        >{g}</button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </PfRow>
+                      ))}
+                      {/* Whole-body questions: asked once here rather than per side. */}
+                      <PfRow label={t("assess.assistiveDevices")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                          <Switch checked={f.usesAssistiveDevices === true} onCheckedChange={(v) => set({ usesAssistiveDevices: v })} />
+                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                        </div>
+                        {f.usesAssistiveDevices && (
+                          <Input
+                            className="h-7 text-sm w-64 mt-1"
+                            placeholder={t("assess.assistiveType")}
+                            value={f.assistiveDeviceTypes}
+                            onChange={(e) => set({ assistiveDeviceTypes: e.target.value })}
+                          />
+                        )}
+                      </PfRow>
+                      <PfRow label={t("assess.stairs")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                          <Switch checked={f.canClimbStairs === true} onCheckedChange={(v) => set({ canClimbStairs: v })} />
+                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                        </div>
+                      </PfRow>
+                      <PfRow label={t("assess.balanceOneSide")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                          <Switch checked={f.canBalanceOneSide === true} onCheckedChange={(v) => set({ canBalanceOneSide: v })} />
+                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                        </div>
+                      </PfRow>
+                      <PfRow label={t("assess.notes")}>
+                        <Textarea rows={2} className="text-sm w-full" value={f.muscleMotionNotes} onChange={(e) => set({ muscleMotionNotes: e.target.value })} />
+                      </PfRow>
+                    </div>
+                    <SectionSaveButton onSave={handleSaveLowerMuscle} busy={patchLower.isPending} saved={lowerMuscleSaved} incomplete={!lowerMuscleComplete} />
+                    </fieldset>
+                  </Section>
+                );
+              })()}
+            </TabsContent>
+          </Tabs>
 
           {/* Saves the team, the general assessment and any unsaved limb sheet,
               then moves the case to committee review. Kept apart from the
@@ -8509,15 +8568,20 @@ export default function ProstheticsCasePage() {
             <div className="flex gap-2">
               <Button
                 onClick={handleSubmitFinalEval}
-                disabled={!finalEvalComplete || submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)}
+                disabled={submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)}
                 className="flex-1 gap-2"
               >
                 {(submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)) && <Loader2 className="h-4 w-4 animate-spin" />}
                 {/* Saving moves the case to "جاهز للتسليم" (FINAL_REVIEW), so the
                     button names that stage; "تم التسليم" belongs to final delivery. */}
-                {t("finalEval.saveEval")} ({tStatus("FINAL_REVIEW")})
+                {t("finalEval.saveEval")}{finalEvalComplete && <> ({tStatus("FINAL_REVIEW")})</>}
               </Button>
             </div>
+          )}
+          {!finalEvalLocked && !finalEvalComplete && (
+            <p className="text-xs text-muted-foreground">
+              {t("finalEval.missingBeforeReady", { fields: finalEvalMissing.join("، ") })}
+            </p>
           )}
           </fieldset>
         </TabsContent>
@@ -8832,12 +8896,12 @@ export default function ProstheticsCasePage() {
           {/* ── إقرار وتعهد المريض (الورقة المرفقة بنموذج التسليم النهائي) ── */}
           <Section
             title={t("finalDelivery.pledge.title")}
-            action={
+            action={canExportPdf ? (
               <Button size="sm" variant="outline" className="gap-2" onClick={handleExportPledgePdf} disabled={pledgePdfLoading}>
                 {pledgePdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 {t("finalDelivery.pledge.exportPdf")}
               </Button>
-            }
+            ) : undefined}
           >
             <div className="space-y-4 text-xs leading-relaxed">
               <p className="font-semibold text-sm">{t("finalDelivery.pledge.intro")}</p>

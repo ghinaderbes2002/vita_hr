@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
-  cashboxApi, CashTransactionType, CreateCashBoxDto, CreateCashCountDto, DepositDto, DisbursementDto,
+  cashboxApi, CashTransactionType, CashTxStatus, CreateCashBoxDto, CreateCashCountDto, DepositDto, DisbursementDto,
   HandoverDto, ReceiptDto, RefillDto, UpdateCashBoxDto,
 } from "@/lib/api/cashbox";
 import { apiErrorMessage } from "@/lib/api/api-errors";
@@ -13,6 +13,7 @@ const K = {
   balances: "cashbox-balances",
   transactions: "cashbox-transactions",
   counts: "cashbox-counts",
+  pending: "cashbox-pending",
 } as const;
 
 /**
@@ -69,7 +70,7 @@ export function useSetMainCashBox() {
 // ── Transactions ──
 export function useCashTransactions(params?: {
   cashBoxId?: string; transactionType?: CashTransactionType; page?: number; limit?: number;
-  dateFrom?: string; dateTo?: string;
+  dateFrom?: string; dateTo?: string; status?: CashTxStatus; search?: string;
 }) {
   return useQuery({ queryKey: [K.transactions, params], queryFn: () => cashboxApi.getTransactions(params) });
 }
@@ -93,9 +94,38 @@ export function useCreateCashTransaction() {
         case "DEPOSIT": return cashboxApi.deposit(move.dto);
       }
     },
-    [K.transactions, K.balances, K.counts],
+    [K.transactions, K.balances, K.counts, K.pending],
     "done",
   );
+}
+
+/** Approve / reject / cancel / confirm / refuse a pending transaction. */
+export type CashDecision =
+  | { action: "ceoApprove"; id: string }
+  | { action: "ceoReject"; id: string; reason: string }
+  | { action: "cancel"; id: string }
+  | { action: "confirmReceipt"; id: string }
+  | { action: "rejectReceipt"; id: string; reason: string };
+
+export function useCashDecision() {
+  return useCashMutation(
+    (d: CashDecision) => {
+      switch (d.action) {
+        case "ceoApprove": return cashboxApi.ceoApprove(d.id);
+        case "ceoReject": return cashboxApi.ceoReject(d.id, d.reason);
+        case "cancel": return cashboxApi.cancel(d.id);
+        case "confirmReceipt": return cashboxApi.confirmReceipt(d.id);
+        case "rejectReceipt": return cashboxApi.rejectReceipt(d.id, d.reason);
+      }
+    },
+    [K.transactions, K.balances, K.pending],
+    "done",
+  );
+}
+
+/** Coming in / gone out but not confirmed yet, per currency. */
+export function useCashPending(boxId: string) {
+  return useQuery({ queryKey: [K.pending, boxId], queryFn: () => cashboxApi.getPending(boxId), enabled: !!boxId });
 }
 
 // ── Counts ──

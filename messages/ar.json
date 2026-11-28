@@ -4363,7 +4363,9 @@
         "balance": "التوازن",
         "finalEval": "التقييم النهائي",
         "finalDelivery": "التسليم النهائي",
-        "timeline": "السجل الزمني"
+        "timeline": "السجل الزمني",
+        "lockedNeedAssessment": "يجب تعبئة تبويب معلومات التقييم أولاً",
+        "lockedNeedCommittee": "يجب حفظ القرار النهائي في تبويب اللجنة أولاً"
       },
       "followUp": {
         "reviewTitle": "برنامج المراجعة",
@@ -4587,7 +4589,9 @@
         "chooseManager": "اختر المدير",
         "fetchUploadSignature": "جلب / رفع التوقيع",
         "chooseManagerFirst": "اختر المدير أولاً",
-        "saveEval": "حفظ التقييم"
+        "saveEval": "حفظ التقييم",
+        "missingBeforeReady": "يُحفظ التقييم دون نقل الحالة. لتصبح جاهزة للتسليم يجب تعبئة: {fields}",
+        "savedNotReady": "تم الحفظ، والحالة لم تصبح جاهزة للتسليم بعد لوجود حقول ناقصة"
       },
       "intake": {
         "title": "بيانات الاستقبال",
@@ -4705,6 +4709,8 @@
         },
         "upperTitle": "تقييم الطرف العلوي",
         "lowerTitle": "تقييم الطرف السفلي",
+        "deptProsthetics": "قسم الأطراف الصناعية",
+        "deptPhysio": "قسم العلاج الفيزيائي",
         "muscleTitle": "تقييم قوة حركة العضلات",
         "saveSection": "حفظ",
         "savedLimbUpper": "تم حفظ تقييم الطرف العلوي",
@@ -4955,7 +4961,9 @@
         "missingOnly": "الحالات الناقصة",
         "completeOnly": "الحالات المكتملة",
         "missingBadge": "ناقصة",
-        "missingCount": "{count} حقل ناقص"
+        "missingCount": "{count} حقل ناقص",
+        "pendingApprovals": "بانتظار الاعتمادات",
+        "pendingApprovalsHint": "ينقصها رأي الطبيب المختص، أو رأي رئيس القسم، أو اعتماد المدير الطبي"
       },
       "table": {
         "patientNumber": "رقم المريض",
@@ -6138,6 +6146,7 @@
           "finalSummaryTitle": "الملخص النهائي",
           "finalSummaryPlaceholder": "ملخص الحالة بعد انتهاء كل الجلسات...",
           "saveSummary": "حفظ الملخص",
+          "summaryRequiredFirst": "يجب تعبئة الملخص النهائي وحفظه أولاً",
           "exportPdf": "تصدير PDF",
           "edit": "تعديل",
           "addError": "حدث خطأ أثناء إضافة الجلسة",

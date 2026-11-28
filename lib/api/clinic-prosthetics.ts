@@ -147,6 +147,9 @@ export interface ProstheticsCase {
   // Missing required fields — computed and stored by the backend after every write.
   hasMissingFields?: boolean;
   missingFields?: MissingField[] | null;
+  /** Set by the API: the doctor's committee opinion, the department head's final
+   *  opinion or any part of the medical director's approval is still empty. */
+  pendingApprovals?: boolean;
   missingFieldsAt?: string | null;
   // A delivered case reopened to fill gaps. `status` stays DELIVERED; this only grants write access.
   isReopened?: boolean;
@@ -530,6 +533,9 @@ export interface ProstheticsCaseListParams {
   deliveredTo?: string;
   /** true → incomplete only, false → complete only, omitted → all. */
   hasMissingFields?: boolean;
+  /** true → only cases whose doctor opinion, department-head opinion or medical
+   *  director approval is still empty; omitted → no filtering. */
+  pendingApprovals?: boolean;
 }
 
 export const clinicProstheticsApi = {

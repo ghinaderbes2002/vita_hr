@@ -500,7 +500,7 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
         <Field label={t("doctor.injuryDate")}>
           <TextValue type="date" dir="ltr" value={v.injuryStartDate} onChange={(x) => s.set({ injuryStartDate: x })} readOnly={ro} />
         </Field>
-        <Field label="سبب البتر">
+        <Field label="سبب الإصابة">
           {ro ? (
             <div className={`rounded-md border bg-muted/40 px-3 py-2 text-sm ${v.amputationCause ? "" : "text-muted-foreground"}`}>
               {v.amputationCause ? AMPUTATION_CAUSES.find((c) => c.value === v.amputationCause)?.label ?? v.amputationCause : "غير مسجَّل"}
@@ -515,13 +515,13 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
               })}
               className="h-9 w-full rounded-md border bg-background px-3 text-sm"
             >
-              <option value="">— اختاري —</option>
+              <option value="">— اختيار —</option>
               {AMPUTATION_CAUSES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           )}
         </Field>
         {!ro && v.amputationCause === "OTHER" && (
-          <Field label="تفاصيل سبب البتر">
+          <Field label="تفاصيل سبب الإصابة">
             <TextValue value={v.amputationCauseOtherDetail ?? ""} onChange={(x) => s.set({ amputationCauseOtherDetail: x })} readOnly={ro} />
           </Field>
         )}

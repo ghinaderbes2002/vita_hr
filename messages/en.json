@@ -4228,7 +4228,9 @@
         "balance": "Balance",
         "finalEval": "Final Evaluation",
         "finalDelivery": "Final Delivery",
-        "timeline": "Timeline"
+        "timeline": "Timeline",
+        "lockedNeedAssessment": "Fill in the Assessment tab first",
+        "lockedNeedCommittee": "Save the committee's final decision first"
       },
       "followUp": {
         "reviewTitle": "Review Program",
@@ -4452,7 +4454,9 @@
         "chooseManager": "Select the manager",
         "fetchUploadSignature": "Fetch / upload signature",
         "chooseManagerFirst": "Select the manager first",
-        "saveEval": "Save Evaluation"
+        "saveEval": "Save Evaluation",
+        "missingBeforeReady": "The evaluation is saved without moving the case. To make it ready for delivery, fill in: {fields}",
+        "savedNotReady": "Saved. The case is not ready for delivery yet: some fields are missing"
       },
       "intake": {
         "title": "Intake Information",
@@ -4570,6 +4574,8 @@
         },
         "upperTitle": "Upper Limb Assessment",
         "lowerTitle": "Lower Limb Assessment",
+        "deptProsthetics": "Prosthetics Department",
+        "deptPhysio": "Physiotherapy Department",
         "muscleTitle": "Muscle Strength Assessment",
         "saveSection": "Save",
         "savedLimbUpper": "Upper limb assessment saved",
@@ -4820,7 +4826,9 @@
         "missingOnly": "Incomplete cases",
         "completeOnly": "Complete cases",
         "missingBadge": "Incomplete",
-        "missingCount": "{count} missing fields"
+        "missingCount": "{count} missing fields",
+        "pendingApprovals": "Pending sign-offs",
+        "pendingApprovalsHint": "Missing the doctor's opinion, the department head's opinion or the medical director's approval"
       },
       "table": {
         "patientNumber": "Patient No.",
@@ -5976,6 +5984,7 @@
           "finalSummaryTitle": "Final Summary",
           "finalSummaryPlaceholder": "Case summary after all sessions are completed...",
           "saveSummary": "Save Summary",
+          "summaryRequiredFirst": "Fill in and save the final summary first",
           "exportPdf": "Export PDF",
           "edit": "Edit",
           "addError": "An error occurred while adding the session",

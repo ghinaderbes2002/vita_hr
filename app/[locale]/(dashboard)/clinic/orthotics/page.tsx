@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { CaseRowLink } from "@/components/clinic/case-row-link";
 import { useLocale, useTranslations } from "next-intl";
 import { Accessibility, Check, Eye, Search, Users, UserX } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -49,7 +48,6 @@ const SECTION_BADGES = [
 ] as const;
 
 export default function OrthoticsListPage() {
-  const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.orthotics.list");
   const [search, setSearch] = useState("");
@@ -103,7 +101,6 @@ export default function OrthoticsListPage() {
   const currentPage = Math.min(page, totalPages);
   const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const open = (id: string) => router.push(`/${locale}/clinic/orthotics/${id}`);
 
   return (
     <div className="space-y-6">
@@ -190,10 +187,12 @@ export default function OrthoticsListPage() {
                 return (
                   <TableRow
                     key={r.id}
-                    className={`cursor-pointer ${isAssigned(r) ? "" : "border-s-4 border-s-amber-400 bg-amber-50/40 dark:bg-amber-500/5"}`}
-                    onClick={() => open(r.id)}
+                    className={`relative cursor-pointer ${isAssigned(r) ? "" : "border-s-4 border-s-amber-400 bg-amber-50/40 dark:bg-amber-500/5"}`}
                   >
-                    <TableCell className="font-mono text-xs">{r.patient?.patientNumber ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      <CaseRowLink href={`/${locale}/clinic/orthotics/${r.id}`} label={r.patient?.patientNumber} />
+                      {r.patient?.patientNumber ?? "—"}
+                    </TableCell>
                     <TableCell>{`${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.trim() || "—"}</TableCell>
                     <TableCell className="text-sm">
                       {r.guardianName
@@ -230,9 +229,7 @@ export default function OrthoticsListPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fmt(r.createdAt)}</TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" className="h-8 w-8">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground"><Eye className="h-4 w-4" /></span>
                     </TableCell>
                   </TableRow>
                 );

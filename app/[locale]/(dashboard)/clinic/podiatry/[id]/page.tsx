@@ -34,6 +34,7 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { NotifyIncompleteFormButton } from "@/components/clinic/notify-incomplete-form-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useCanExportClinicPdf } from "@/lib/hooks/use-can-export-clinic-pdf";
 import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
@@ -124,6 +125,7 @@ export default function PodiatryReceptionPage() {
   // The assessment (sessions) tab is a clinical activity: a supervisor who can
   // only receive patients sees the reception + patient info only.
   const { hasAnyPermission, hasRole, isAdmin } = usePermissions();
+  const canExportPdf = useCanExportClinicPdf();
   // مشرف الجودة (role QS) reads the assessment, review and doctor decision too;
   // editing them still needs the session permissions (canEditAssessment below).
   const showSessionsTab =
@@ -482,7 +484,7 @@ export default function PodiatryReceptionPage() {
                 // Newest first, so the oldest is form 1.
                 title={t("formNumber", { n: sessions.length - i })}
                 onInstalled={() => setInstallReminder(true)}
-                actions={
+                actions={canExportPdf ? (
                   <Button
                     size="sm"
                     variant="outline"
@@ -493,7 +495,7 @@ export default function PodiatryReceptionPage() {
                     {pdfBusy === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                     {pdfBusy === s.id ? t("loading") : t("exportPdf")}
                   </Button>
-                }
+                ) : undefined}
               />
             ))
           )}

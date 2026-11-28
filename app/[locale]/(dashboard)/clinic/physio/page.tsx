@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { CaseRowLink } from "@/components/clinic/case-row-link";
 import { useLocale, useTranslations } from "next-intl";
 import { Search, Eye, Heart, Users, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,6 @@ const fmt = (d: string) => {
 };
 
 export default function PhysioListPage() {
-  const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.physio");
   const tCommon = useTranslations("clinic.common");
@@ -235,10 +234,10 @@ export default function PhysioListPage() {
               cases.map((c: PhysioCase) => (
                 <TableRow
                   key={c.id}
-                  className="cursor-pointer hover:bg-muted/40 transition-colors"
-                  onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}
+                  className="relative cursor-pointer hover:bg-muted/40 transition-colors"
                 >
                   <TableCell className="font-mono text-sm text-muted-foreground">
+                    <CaseRowLink href={`/${locale}/clinic/physio/${c.id}`} label={c.patient?.patientNumber} />
                     {c.patient?.patientNumber ?? "—"}
                   </TableCell>
                   <TableCell className="font-medium">
@@ -272,11 +271,8 @@ export default function PhysioListPage() {
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {fmt(c.createdAt)}
                   </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8"
-                      onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                  <TableCell>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground"><Eye className="h-4 w-4" /></span>
                   </TableCell>
                 </TableRow>
               ))

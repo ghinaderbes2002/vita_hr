@@ -1,5 +1,6 @@
 "use client";
 
+import { CashTxActions, CashTxStatusBadge } from "./cash-tx-status";
 import { useTranslations } from "next-intl";
 import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, PiggyBank, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -85,7 +86,7 @@ export function BoxBalances({ boxId, className }: { boxId: string; className?: s
 }
 
 /** Who the money went to or came from. */
-function Counterpart({ tx }: { tx: CashTransaction }) {
+function Counterpart({ tx, viewBoxId }: { tx: CashTransaction; viewBoxId?: string }) {
   const t = useTranslations("cashbox");
   const nameOf = useEmployeeName();
   if (tx.transactionType === "DISBURSEMENT") return <>{nameOf(tx.targetEmployeeId)}</>;
@@ -94,23 +95,30 @@ function Counterpart({ tx }: { tx: CashTransaction }) {
   if (tx.transactionType === "RECEIPT") {
     return <ClientName patientId={tx.patientId} customerId={tx.customerId} customer={tx.customer} />;
   }
-  // Moves between boxes: the other end is always the main box.
-  return <span className="text-muted-foreground">{t("mainBox")}</span>;
+  // Moves between boxes: the other box from where the viewer stands — on the
+  // main box's own page that is the sub box, everywhere else the main box.
+  const other = viewBoxId && viewBoxId === tx.relatedCashBoxId ? tx.cashBox : tx.relatedCashBox;
+  return <span className="text-muted-foreground">{other?.name ?? t("mainBox")}</span>;
 }
 
 export function TransactionsTable({
-  transactions, isLoading, showBox = true,
+  transactions, isLoading, showBox = true, viewBoxId,
 }: {
   transactions: CashTransaction[];
   isLoading?: boolean;
+  /** On one box's page: its own side of a move leads, the other box is the counterpart. */
+  viewBoxId?: string;
   /** Off on a single box's page, where the box is already known. */
   showBox?: boolean;
 }) {
   const t = useTranslations("cashbox");
   const fmt = useWarehouseFormat();
-  const columns = showBox ? 7 : 6;
+  const columns = showBox ? 11 : 10;
+  // A snapshot, or "—" while that side hasn't happened yet (pending).
+  const money = (v: number | null | undefined, code?: string) => (v == null ? "—" : fmt.money(v, code));
+  const betweenBoxes = (tx: CashTransaction) => tx.transactionType === "HANDOVER" || tx.transactionType === "REFILL";
   return (
-    <div className="rounded-md border">
+    <div className="overflow-x-auto rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -118,9 +126,13 @@ export function TransactionsTable({
             <TableHead>{t("fields.type")}</TableHead>
             {showBox && <TableHead>{t("fields.box")}</TableHead>}
             <TableHead>{t("fields.amount")}</TableHead>
+            <TableHead className="whitespace-nowrap">الرصيد قبل</TableHead>
+            <TableHead className="whitespace-nowrap">الرصيد بعد</TableHead>
             <TableHead>{t("fields.counterpart")}</TableHead>
             <TableHead>{t("fields.reason")}</TableHead>
             <TableHead>{t("fields.reference")}</TableHead>
+            <TableHead>الحالة</TableHead>
+            <TableHead />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -147,11 +159,35 @@ export function TransactionsTable({
                 <TableCell className="whitespace-nowrap font-semibold tabular-nums">
                   {fmt.money(tx.amount, tx.currency?.code)}
                 </TableCell>
-                <TableCell className="text-sm"><Counterpart tx={tx} /></TableCell>
+                {(["Before", "After"] as const).map((when) => {
+                  // On the main box's page, its own (counterpart) figures lead.
+                  const viewingOther = !!viewBoxId && viewBoxId === tx.relatedCashBoxId;
+                  const own = viewingOther ? tx[`counterpartBalance${when}`] : tx[`balance${when}`];
+                  const other = viewingOther ? tx[`balance${when}`] : tx[`counterpartBalance${when}`];
+                  const otherName = (viewingOther ? tx.cashBox?.name : tx.relatedCashBox?.name) ?? t("mainBox");
+                  return (
+                    <TableCell key={when} className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
+                      {money(own, tx.currency?.code)}
+                      {betweenBoxes(tx) && (
+                        <p className="text-[11px]">{otherName}: {money(other, tx.currency?.code)}</p>
+                      )}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-sm"><Counterpart tx={tx} viewBoxId={viewBoxId} /></TableCell>
                 <TableCell className="max-w-64 truncate text-sm text-muted-foreground" title={tx.reason ?? undefined}>
                   {tx.reason || "—"}
                 </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">{tx.id.slice(0, 8)}</TableCell>
+                <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground" dir="ltr">
+                  {tx.referenceNumber ?? tx.id.slice(0, 8)}
+                </TableCell>
+                <TableCell>
+                  <CashTxStatusBadge tx={tx} />
+                  {tx.requestedByName && (tx.status && tx.status !== "COMPLETED") && (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">طلبها: {tx.requestedByName}</p>
+                  )}
+                </TableCell>
+                <TableCell><CashTxActions tx={tx} /></TableCell>
               </TableRow>
             ))
           )}

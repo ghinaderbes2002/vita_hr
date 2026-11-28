@@ -36,11 +36,32 @@ export interface CashBalance {
 export type CashTransactionType = "DISBURSEMENT" | "RECEIPT" | "HANDOVER" | "REFILL" | "DEPOSIT";
 export const CASH_TRANSACTION_TYPES: CashTransactionType[] = ["DEPOSIT", "DISBURSEMENT", "RECEIPT", "HANDOVER", "REFILL"];
 
+/**
+ * Only COMPLETED counts in a balance. PENDING_CEO_APPROVAL: a disbursement
+ * waiting for the CEO (nothing taken yet). PENDING_RECEIPT: money on its way in
+ * — a receipt, or a handover/refill that already left the sender — until the
+ * receiving box's custodian confirms it. A rejected receipt returns to the
+ * sender by itself.
+ */
+export type CashTxStatus = "COMPLETED" | "PENDING_CEO_APPROVAL" | "PENDING_RECEIPT" | "REJECTED" | "CANCELLED";
+export const CASH_TX_STATUSES: CashTxStatus[] = ["COMPLETED", "PENDING_CEO_APPROVAL", "PENDING_RECEIPT", "REJECTED", "CANCELLED"];
+
+/** Per currency: coming in but not confirmed, and gone out but not confirmed by the receiver. */
+export interface CashPendingAmounts {
+  incoming: { currency?: CashCurrency | null; currencyCode?: string; amount: number }[];
+  outgoing: { currency?: CashCurrency | null; currencyCode?: string; amount: number }[];
+}
+
 export interface CashTransaction {
   id: string;
+  /** CB-<year>-<4 digits>: readable, unique, never changes. Don't sort by it (text order breaks past 9999). */
+  referenceNumber?: string | null;
   transactionType: CashTransactionType;
   cashBoxId: string;
   cashBox?: Pick<CashBox, "id" | "name" | "type"> | null;
+  /** The other box of a handover / refill (the main box); null otherwise. */
+  relatedCashBoxId?: string | null;
+  relatedCashBox?: Pick<CashBox, "id" | "name" | "type"> | null;
   amount: number;
   currencyId: string;
   currency?: CashCurrency | null;
@@ -50,6 +71,21 @@ export interface CashTransaction {
   customerId?: string | null;
   customer?: { id: string; name: string } | null;
   createdByUserId?: string | null;
+  /** Missing on an API without states — treated as COMPLETED. */
+  status?: CashTxStatus;
+  requestedByName?: string | null;
+  decidedByName?: string | null;
+  decidedAt?: string | null;
+  rejectReason?: string | null;
+  /**
+   * Snapshots taken when each side's effect happened, in the transaction's
+   * currency. balance* is the row's own box (cashBoxId); counterpart* is the
+   * main box on a handover / refill. null until that side happens (pending).
+   */
+  balanceBefore?: number | null;
+  balanceAfter?: number | null;
+  counterpartBalanceBefore?: number | null;
+  counterpartBalanceAfter?: number | null;
   createdAt: string;
 }
 
@@ -98,7 +134,8 @@ interface MoveBase {
   /** Required on every transaction. */
   reason: string;
 }
-export type DisbursementDto = MoveBase & { targetEmployeeId: string };
+/** requiresCeoApproval: held (nothing taken) until the CEO approves. */
+export type DisbursementDto = MoveBase & { targetEmployeeId: string; requiresCeoApproval?: boolean };
 /** Exactly one of patientId / customerId. */
 export type ReceiptDto = MoveBase & ({ patientId: string; customerId?: never } | { customerId: string; patientId?: never });
 /** cashBoxId is the SUB box; the main box is found by the server. */
@@ -137,7 +174,15 @@ function paged<T>(data: unknown, map: (x: T) => T): Paged<T> {
 }
 
 // Amounts may come back as decimal strings.
-const normTx = (t: CashTransaction): CashTransaction => ({ ...t, amount: num(t.amount) });
+const numOrNull = (v: unknown) => (v == null || v === "" ? null : Number(v));
+const normTx = (t: CashTransaction): CashTransaction => ({
+  ...t,
+  amount: num(t.amount),
+  balanceBefore: numOrNull(t.balanceBefore),
+  balanceAfter: numOrNull(t.balanceAfter),
+  counterpartBalanceBefore: numOrNull(t.counterpartBalanceBefore),
+  counterpartBalanceAfter: numOrNull(t.counterpartBalanceAfter),
+});
 const normCount = (c: CashCount): CashCount => ({
   ...c,
   expectedBalance: num(c.expectedBalance),
@@ -166,8 +211,41 @@ export const cashboxApi = {
     cashBoxId?: string; transactionType?: CashTransactionType; page?: number; limit?: number;
     /** Inclusive days, yyyy-mm-dd; the same date in both picks one day. */
     dateFrom?: string; dateTo?: string;
+    /** An unknown value is a 400, not ignored. */
+    status?: CashTxStatus;
+    /** Part of a reference number, any case (CB-2026-0001, "2026-00"). */
+    search?: string;
   }): Promise<Paged<CashTransaction>> =>
     paged((await apiClient.get(`${BASE}/transactions`, { params })).data, normTx),
+
+  // ── Decisions on a pending transaction ──
+  /** Takes the money and completes it; 400 if the balance no longer covers it. */
+  ceoApprove: async (id: string): Promise<CashTransaction> =>
+    unwrap((await apiClient.patch(`${BASE}/transactions/${id}/ceo-approve`)).data),
+  ceoReject: async (id: string, reason: string): Promise<CashTransaction> =>
+    unwrap((await apiClient.patch(`${BASE}/transactions/${id}/ceo-reject`, { reason })).data),
+  /** Only whoever recorded it, before the decision. */
+  cancel: async (id: string): Promise<CashTransaction> =>
+    unwrap((await apiClient.patch(`${BASE}/transactions/${id}/cancel`)).data),
+  /** The receiving box's custodian (or cashbox.boxes.manage). */
+  confirmReceipt: async (id: string): Promise<CashTransaction> =>
+    unwrap((await apiClient.patch(`${BASE}/transactions/${id}/confirm-receipt`)).data),
+  rejectReceipt: async (id: string, reason: string): Promise<CashTransaction> =>
+    unwrap((await apiClient.patch(`${BASE}/transactions/${id}/reject-receipt`, { reason })).data),
+  /**
+   * A bare array, one row per currency with anything pending (none → []):
+   * `{ currency, awaitingReceipt, inTransit }`. awaitingReceipt is coming in and
+   * not yet in the balance; inTransit has already left it — never add it back.
+   */
+  getPending: async (boxId: string): Promise<CashPendingAmounts> => {
+    const rows = list<{ currency?: CashCurrency | null; awaitingReceipt?: unknown; inTransit?: unknown }>(
+      (await apiClient.get(`${BASE}/boxes/${boxId}/pending`)).data,
+    );
+    return {
+      incoming: rows.map((r) => ({ currency: r.currency, amount: num(r.awaitingReceipt) })).filter((r) => r.amount),
+      outgoing: rows.map((r) => ({ currency: r.currency, amount: num(r.inTransit) })).filter((r) => r.amount),
+    };
+  },
   disburse: async (dto: DisbursementDto): Promise<CashTransaction> =>
     unwrap((await apiClient.post(`${BASE}/transactions/disbursement`, dto)).data),
   receive: async (dto: ReceiptDto): Promise<CashTransaction> =>

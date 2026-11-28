@@ -7,7 +7,7 @@ import {
   Clock, AlertCircle, RotateCcw, FileText, AlertOctagon, Coffee, DollarSign,
   Mail, Trophy, CheckCircle2, XCircle, ClipboardList, FileWarning,
   Cake, UserPlus, FileCheck, UserX, ListTodo, Briefcase, Star, CalendarPlus,
-  Settings, Users, Building2, GraduationCap, Shield, UserCog, Menu, CalendarX,
+  Settings, Users, Building2, GraduationCap, Shield, UserCog, Menu, CalendarX, Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,6 +98,13 @@ export function Header() {
     // Appointment notifications are all GENERAL; their kind travels in data.type.
     APPOINTMENT_APOLOGIZED:          { icon: CalendarX,     iconClass: "text-sky-600",    bgClass: "bg-sky-50/60 dark:bg-sky-950/20",       dotClass: "bg-sky-600" },
     APPOINTMENT_CANCELLED:           { icon: CalendarX,     iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    // Cash box: GENERAL too, kind in data.type.
+    CASH_DISBURSEMENT_PENDING:       { icon: Banknote,      iconClass: "text-indigo-500", bgClass: "bg-indigo-50/60 dark:bg-indigo-950/20", dotClass: "bg-indigo-500" },
+    CASH_DISBURSEMENT_APPROVED:      { icon: Banknote,      iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
+    CASH_DISBURSEMENT_REJECTED:      { icon: Banknote,      iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    CASH_RECEIPT_PENDING:            { icon: Banknote,      iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
+    CASH_RECEIPT_CONFIRMED:          { icon: Banknote,      iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
+    CASH_RECEIPT_REJECTED:           { icon: Banknote,      iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
     PATIENT_SURVEY_REQUIRED:         { icon: Star,          iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
     JOB_APPLICATION_SUBMITTED:       { icon: Briefcase,     iconClass: "text-teal-500",   bgClass: "bg-teal-50/60 dark:bg-teal-950/20",     dotClass: "bg-teal-500" },
     GENERAL:                         { icon: Mail,         iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },

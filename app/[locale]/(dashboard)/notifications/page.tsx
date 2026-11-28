@@ -8,7 +8,7 @@ import { ar } from "date-fns/locale";
 import {
   Bell, CheckCheck, AlertTriangle, CheckCircle2, XCircle, Info, ExternalLink,
   Clock, FileWarning, CalendarX, CalendarClock, User, ClipboardList, FileCheck, Briefcase,
-  Cake, UserPlus, FileX, ListTodo, UserX, Filter, ChevronDown, Mail, Trophy, Star, CalendarPlus,
+  Cake, UserPlus, FileX, ListTodo, UserX, Filter, ChevronDown, Mail, Trophy, Star, CalendarPlus, Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +64,12 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   // Sent as GENERAL with the kind in data.type.
   APPOINTMENT_APOLOGIZED: { icon: CalendarX, color: "text-sky-700", bg: "bg-sky-100", label: "اعتذار عن موعد" },
   APPOINTMENT_CANCELLED: { icon: CalendarX, color: "text-red-600", bg: "bg-red-100", label: "إلغاء موعد" },
+  CASH_DISBURSEMENT_PENDING: { icon: Banknote, color: "text-indigo-600", bg: "bg-indigo-100", label: "صرف بانتظار موافقتك" },
+  CASH_DISBURSEMENT_APPROVED: { icon: Banknote, color: "text-green-600", bg: "bg-green-100", label: "تمت الموافقة على الصرف" },
+  CASH_DISBURSEMENT_REJECTED: { icon: Banknote, color: "text-red-600", bg: "bg-red-100", label: "رُفض الصرف" },
+  CASH_RECEIPT_PENDING: { icon: Banknote, color: "text-amber-600", bg: "bg-amber-100", label: "مبلغ بانتظار تأكيد استلامك" },
+  CASH_RECEIPT_CONFIRMED: { icon: Banknote, color: "text-green-600", bg: "bg-green-100", label: "تأكّد الاستلام" },
+  CASH_RECEIPT_REJECTED: { icon: Banknote, color: "text-red-600", bg: "bg-red-100", label: "رُفض الاستلام" },
   PATIENT_SURVEY_REQUIRED:        { icon: Star,          color: "text-amber-600",  bg: "bg-amber-100",  label: "استبيان رضا مطلوب" },
   JOB_APPLICATION_SUBMITTED:      { icon: Briefcase,     color: "text-teal-600",   bg: "bg-teal-100",   label: "طلب توظيف جديد" },
   GENERAL:                        { icon: Info,         color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },

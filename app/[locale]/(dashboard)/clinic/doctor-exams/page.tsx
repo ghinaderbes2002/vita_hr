@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { CaseRowLink } from "@/components/clinic/case-row-link";
 import { useLocale, useTranslations } from "next-intl";
 import { Search, Eye, Stethoscope, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -38,7 +38,6 @@ const ALLOWED_JOB_CODES = ["VTX-JTL-000007"]; // المدير الطبي
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
 export default function DoctorExamsListPage() {
-  const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.doctorExams");
   const tCommon = useTranslations("clinic.common");
@@ -168,10 +167,10 @@ export default function DoctorExamsListPage() {
               rows.map((c: DoctorExamListItem) => (
                 <TableRow
                   key={c.id}
-                  className="cursor-pointer hover:bg-muted/40 transition-colors"
-                  onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}
+                  className="relative cursor-pointer hover:bg-muted/40 transition-colors"
                 >
                   <TableCell className="font-mono text-xs text-muted-foreground">
+                    <CaseRowLink href={`/${locale}/clinic/physio/${c.id}`} label={c.caseNumber ?? undefined} />
                     {c.caseNumber ?? "—"}
                   </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
@@ -196,27 +195,21 @@ export default function DoctorExamsListPage() {
                       const target = number?.startsWith("PT-") ? "physio" : number?.startsWith("PR-") ? "prosthetics" : null;
                       if (!target) return <span className="mt-1 block whitespace-nowrap text-xs text-muted-foreground">{t("convertedToOther")}</span>;
                       return (
-                        <button
-                          type="button"
-                          className="mt-1 block whitespace-nowrap text-xs text-primary hover:underline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/${locale}/clinic/${target}/${c.convertedToCaseId}`);
-                          }}
+                        // Above the row's own link, so it opens the converted case instead.
+                        <Link
+                          href={`/${locale}/clinic/${target}/${c.convertedToCaseId}`}
+                          className="relative z-10 mt-1 block w-fit whitespace-nowrap text-xs text-primary hover:underline"
                         >
                           {t("convertedTo", { number: number ?? "" })}
-                        </button>
+                        </Link>
                       );
                     })()}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {fmt(c.createdAt)}
                   </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8"
-                      onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                  <TableCell>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground"><Eye className="h-4 w-4" /></span>
                   </TableCell>
                 </TableRow>
               ))

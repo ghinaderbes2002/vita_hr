@@ -57,6 +57,7 @@ import { AssignmentsPanel } from "@/components/patient-app/assignments-panel";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useCanExportClinicPdf } from "@/lib/hooks/use-can-export-clinic-pdf";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import {
@@ -272,6 +273,7 @@ export default function PhysioCasePage() {
   // the intake form but not the clinical tabs — matching the prosthetics page.
   // The VTX-JTL-000011 job title keeps its existing intake-only shortcut.
   const { hasAnyPermission, hasRole, isAdmin } = usePermissions();
+  const canExportPdf = useCanExportClinicPdf();
   // مشرف الجودة (role QS) reads the whole file — every tab, not just intake —
   // whatever their job title. What they may change still follows their permissions.
   const isQualitySupervisor = hasRole("QS");
@@ -807,7 +809,10 @@ export default function PhysioCasePage() {
       if (mh.testsHad?.length) setTestsHad(mh.testsHad);
 
       // Surgeries — load existing rows from backend
-      const backendSurgeries: any[] = mh.surgeries ?? [];
+      // In the order they were entered: rows are posted one by one, so the API's
+      // own array order is not the form's.
+      const backendSurgeries: any[] = [...(mh.surgeries ?? [])]
+        .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
       if (backendSurgeries.length > 0) {
         const rows = Array.from({ length: 5 }, (_, i) => ({
           name: backendSurgeries[i]?.name ?? "",
@@ -1075,6 +1080,84 @@ export default function PhysioCasePage() {
     void tryAdvanceStatus("COMPLAINT", "PAIN_MAP");
   };
 
+  // The whole medical history as the API takes it. Also saved from the
+  // physiotherapist's assessment plan, which now holds the female-only questions.
+  const buildHistoryDto = () => ({
+    lifeType: history.lifeType || undefined,
+    smokes: history.smokes,
+    hasSmokedBefore: history.hasSmokedBefore,
+    smokingFrequency: history.smokingFrequency || undefined,
+    hasPacemaker: history.hasPacemaker,
+    pacemakerDetail: history.hasPacemaker
+      ? history.pacemakerDetail || undefined
+      : undefined,
+    allergies: history.allergies || undefined,
+    adhesiveAllergy: history.adhesiveAllergy,
+    adhesiveAllergyDetail: history.adhesiveAllergy
+      ? history.adhesiveAllergyDetail || undefined
+      : undefined,
+    isPregnant: history.isPregnant,
+    maritalStatus: history.maritalStatus || undefined,
+    lastMenstrualPeriod: history.lastMenstrualPeriod || undefined,
+    currentMedications: history.currentMedications || undefined,
+    prescriptionDrugs: history.prescriptionDrugs,
+    herbalSupplements: history.herbalSupplements,
+    supplementsList: history.herbalSupplements
+      ? history.supplementsList || undefined
+      : undefined,
+    previousDiagnoses: history.previousDiagnoses || undefined,
+    previousComplaintsSurgeries:
+      history.previousComplaintsSurgeries || undefined,
+    hasOtherHealthProblems: history.hasOtherHealthProblems,
+    otherConditions: history.hasOtherHealthProblems
+      ? history.otherConditions || undefined
+      : undefined,
+    hasDoctorRestrictions: history.hasDoctorRestrictions,
+    doctorRestrictions: history.hasDoctorRestrictions
+      ? history.doctorRestrictions || undefined
+      : undefined,
+    hadPTSameProblem: history.hadPTSameProblem,
+    ptSameProblemDetail: history.hadPTSameProblem
+      ? history.ptSameProblemDetail || undefined
+      : undefined,
+    receivingOtherTreatment: history.receivingOtherTreatment,
+    otherTreatmentDetail: history.receivingOtherTreatment
+      ? history.otherTreatmentDetail || undefined
+      : undefined,
+    chronicConditions: chronicConditions.length
+      ? chronicConditions
+      : undefined,
+    chronicConditionsOther: chronicConditions.includes("OTHER")
+      ? history.chronicConditionsOther || undefined
+      : undefined,
+    testsHad: testsHad.length ? testsHad : undefined,
+    testsOther: history.testsOther || undefined,
+    testResults: history.testResults || undefined,
+    newAnalysis: history.newAnalysis || undefined,
+    newAnalysisDate: history.newAnalysisDate || undefined,
+    newAnalysisAttachment: history.newAnalysisAttachment || undefined,
+    oldAnalysis: history.oldAnalysis || undefined,
+    oldAnalysisDate: history.oldAnalysisDate || undefined,
+    oldAnalysisAttachment: history.oldAnalysisAttachment || undefined,
+    boneDensityTest: history.boneDensityTest,
+    boneDensityDetail: history.boneDensityTest
+      ? history.boneDensityDetail || undefined
+      : undefined,
+    hospitalizedLastYear: history.hospitalizedLastYear,
+    hospitalizedDetail: history.hospitalizedLastYear
+      ? history.hospitalizedDetail || undefined
+      : undefined,
+    imagingProcedures: (() => {
+      const rows = history.imagingProcedures.filter((p) => p.imageUrl || p.description.trim());
+      return rows.length ? rows : undefined;
+    })(),
+    diagnosis: history.diagnosis || undefined,
+    hadSurgeries: history.hadSurgeries,
+    surgeriesDetail: history.hadSurgeries
+      ? history.surgeriesDetail || undefined
+      : undefined,
+  });
+
   const handleSaveHistory = async () => {
     // Only POST surgeries that don't already exist in the backend (prevent duplicates)
     const existingSurgeryNames = new Set(
@@ -1082,97 +1165,24 @@ export default function PhysioCasePage() {
         s.name?.trim().toLowerCase(),
       ),
     );
+    // `order` is the row's place in the form. It used to be counted after the
+    // filter, so a row added under saved ones was stored as order 1 and moved to
+    // the top on reload, pushing the last row past the five shown.
     const surgeriesFiltered = surgeries
+      .map((s, i) => ({ s, order: i + 1 }))
       .filter(
-        (s) =>
+        ({ s }) =>
           s.name.trim() &&
           !existingSurgeryNames.has(s.name.trim().toLowerCase()),
       )
-      .map((s, i) => ({
+      .map(({ s, order }) => ({
         name: s.name,
         type: s.type || undefined,
         date: s.date || undefined,
-        order: i + 1,
+        order,
       }));
 
-    await submitHistory.mutateAsync({
-      id,
-      dto: {
-        lifeType: history.lifeType || undefined,
-        smokes: history.smokes,
-        hasSmokedBefore: history.hasSmokedBefore,
-        smokingFrequency: history.smokingFrequency || undefined,
-        hasPacemaker: history.hasPacemaker,
-        pacemakerDetail: history.hasPacemaker
-          ? history.pacemakerDetail || undefined
-          : undefined,
-        allergies: history.allergies || undefined,
-        adhesiveAllergy: history.adhesiveAllergy,
-        adhesiveAllergyDetail: history.adhesiveAllergy
-          ? history.adhesiveAllergyDetail || undefined
-          : undefined,
-        isPregnant: history.isPregnant,
-        maritalStatus: history.maritalStatus || undefined,
-        lastMenstrualPeriod: history.lastMenstrualPeriod || undefined,
-        currentMedications: history.currentMedications || undefined,
-        prescriptionDrugs: history.prescriptionDrugs,
-        herbalSupplements: history.herbalSupplements,
-        supplementsList: history.herbalSupplements
-          ? history.supplementsList || undefined
-          : undefined,
-        previousDiagnoses: history.previousDiagnoses || undefined,
-        previousComplaintsSurgeries:
-          history.previousComplaintsSurgeries || undefined,
-        hasOtherHealthProblems: history.hasOtherHealthProblems,
-        otherConditions: history.hasOtherHealthProblems
-          ? history.otherConditions || undefined
-          : undefined,
-        hasDoctorRestrictions: history.hasDoctorRestrictions,
-        doctorRestrictions: history.hasDoctorRestrictions
-          ? history.doctorRestrictions || undefined
-          : undefined,
-        hadPTSameProblem: history.hadPTSameProblem,
-        ptSameProblemDetail: history.hadPTSameProblem
-          ? history.ptSameProblemDetail || undefined
-          : undefined,
-        receivingOtherTreatment: history.receivingOtherTreatment,
-        otherTreatmentDetail: history.receivingOtherTreatment
-          ? history.otherTreatmentDetail || undefined
-          : undefined,
-        chronicConditions: chronicConditions.length
-          ? chronicConditions
-          : undefined,
-        chronicConditionsOther: chronicConditions.includes("OTHER")
-          ? history.chronicConditionsOther || undefined
-          : undefined,
-        testsHad: testsHad.length ? testsHad : undefined,
-        testsOther: history.testsOther || undefined,
-        testResults: history.testResults || undefined,
-        newAnalysis: history.newAnalysis || undefined,
-        newAnalysisDate: history.newAnalysisDate || undefined,
-        newAnalysisAttachment: history.newAnalysisAttachment || undefined,
-        oldAnalysis: history.oldAnalysis || undefined,
-        oldAnalysisDate: history.oldAnalysisDate || undefined,
-        oldAnalysisAttachment: history.oldAnalysisAttachment || undefined,
-        boneDensityTest: history.boneDensityTest,
-        boneDensityDetail: history.boneDensityTest
-          ? history.boneDensityDetail || undefined
-          : undefined,
-        hospitalizedLastYear: history.hospitalizedLastYear,
-        hospitalizedDetail: history.hospitalizedLastYear
-          ? history.hospitalizedDetail || undefined
-          : undefined,
-        imagingProcedures: (() => {
-          const rows = history.imagingProcedures.filter((p) => p.imageUrl || p.description.trim());
-          return rows.length ? rows : undefined;
-        })(),
-        diagnosis: history.diagnosis || undefined,
-        hadSurgeries: history.hadSurgeries,
-        surgeriesDetail: history.hadSurgeries
-          ? history.surgeriesDetail || undefined
-          : undefined,
-      },
-    });
+    await submitHistory.mutateAsync({ id, dto: buildHistoryDto() });
 
     for (const s of surgeriesFiltered) {
       await addSurgery.mutateAsync({ id, dto: s });
@@ -1214,6 +1224,15 @@ export default function PhysioCasePage() {
   const handleSavePostural = async () => {
     const p = postural;
     try {
+      // The female-only questions sit in this tab but belong to the medical
+      // history, so they are saved there — only when they changed.
+      const mh = c.medicalHistory as any;
+      const femaleChanged = patientFull?.gender === "FEMALE" && (
+        history.isPregnant !== (mh?.isPregnant ?? false)
+        || history.maritalStatus !== (mh?.maritalStatus ?? "")
+        || history.lastMenstrualPeriod !== (mh?.lastMenstrualPeriod ?? "")
+      );
+      if (femaleChanged) await submitHistory.mutateAsync({ id, dto: buildHistoryDto() });
       await submitPostural.mutateAsync({
         id,
         dto: {
@@ -1596,20 +1615,22 @@ export default function PhysioCasePage() {
               {t("finishExam")}
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportFullPdf}
-            disabled={pdfExporting}
-            className="gap-2"
-          >
-            {pdfExporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            {pdfExporting ? t("exporting") : t("exportPdf")}
-          </Button>
+          {canExportPdf && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportFullPdf}
+              disabled={pdfExporting}
+              className="gap-2"
+            >
+              {pdfExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {pdfExporting ? t("exporting") : t("exportPdf")}
+            </Button>
+          )}
           {canEdit && (
             <Button
               variant="outline"
@@ -1624,7 +1645,21 @@ export default function PhysioCasePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs key={`${id}-${jobTitles.codes.join(",")}`} value={topTab ?? defaultTab} onValueChange={setTopTab}>
+      <Tabs
+        key={`${id}-${jobTitles.codes.join(",")}`}
+        value={topTab ?? defaultTab}
+        onValueChange={(tab) => {
+          // The department head reviews a finished case, so their tab waits for
+          // the saved final summary; until then the summary tab opens instead.
+          if (tab === "supervisor_review" && !caseData?.finalSummary?.trim()) {
+            toast.error(t("sessions.summaryRequiredFirst"));
+            setTopTab("physio_form");
+            setPhysioFormTab("summary");
+            return;
+          }
+          setTopTab(tab);
+        }}
+      >
         <TabsList
           className="flex-wrap h-auto gap-1 w-full justify-start"
           dir={isRtl ? "rtl" : "ltr"}
@@ -2428,28 +2463,6 @@ export default function PhysioCasePage() {
                   <Input className="mr-4" value={history.pacemakerDetail} onChange={(e) => setHistory((h) => ({ ...h, pacemakerDetail: e.target.value }))} placeholder={t("medicalHistory.pacemakerDetail")} disabled={!canEdit} />
                 )}
               </div>
-
-              {/* 8. للإناث: الحمل */}
-              {patientFull?.gender === "FEMALE" && (
-                <>
-                  <div className="flex flex-wrap gap-2 items-center justify-between">
-                    <Label>{t("medicalHistory.isPregnant")}</Label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{t("no")}</span>
-                      <Switch checked={history.isPregnant} onCheckedChange={(v) => setHistory((h) => ({ ...h, isPregnant: v }))} disabled={!canEdit} />
-                      <span className="text-xs text-muted-foreground">{t("yes")}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>{t("medicalHistory.maritalStatus")}</Label>
-                    <Input value={history.maritalStatus} onChange={(e) => setHistory((h) => ({ ...h, maritalStatus: e.target.value }))} disabled={!canEdit} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>{t("medicalHistory.lastMenstrualPeriod")}</Label>
-                    <Input value={history.lastMenstrualPeriod} onChange={(e) => setHistory((h) => ({ ...h, lastMenstrualPeriod: e.target.value }))} disabled={!canEdit} />
-                  </div>
-                </>
-              )}
 
               {/* 9. نمط الحياة */}
               <div className="space-y-1.5">
@@ -3366,6 +3379,27 @@ export default function PhysioCasePage() {
           {/* Notes */}
           <Section title={t("posturalAssessment.notesTitle")}>
             <div className="space-y-3">
+              {/* للإناث — نُقلت من التاريخ الطبي في نموذج الطبيب، وتُحفظ معه */}
+              {patientFull?.gender === "FEMALE" && (
+                <>
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
+                    <Label>{t("medicalHistory.isPregnant")}</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{t("no")}</span>
+                      <Switch checked={history.isPregnant} onCheckedChange={(v) => setHistory((h) => ({ ...h, isPregnant: v }))} disabled={!canEdit} />
+                      <span className="text-xs text-muted-foreground">{t("yes")}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("medicalHistory.maritalStatus")}</Label>
+                    <Input value={history.maritalStatus} onChange={(e) => setHistory((h) => ({ ...h, maritalStatus: e.target.value }))} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("medicalHistory.lastMenstrualPeriod")}</Label>
+                    <Input value={history.lastMenstrualPeriod} onChange={(e) => setHistory((h) => ({ ...h, lastMenstrualPeriod: e.target.value }))} disabled={!canEdit} />
+                  </div>
+                </>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-sm">{t("posturalAssessment.spasticityNotes")}</Label>
                 <Textarea rows={2} value={postural.spasticityNotes} onChange={(e) => setPostural((p) => ({ ...p, spasticityNotes: e.target.value }))} disabled={!canEdit} />

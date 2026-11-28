@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { CaseRowLink } from "@/components/clinic/case-row-link";
 import { useLocale, useTranslations } from "next-intl";
 import { Search, Eye, Footprints, UserX } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -61,7 +60,6 @@ const FULL_CASELOAD_JOB_CODES = [
 ];
 
 export default function PodiatryListPage() {
-  const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.podiatry");
   const tMine = useTranslations("clinic.podiatry.myPatients");
@@ -210,9 +208,11 @@ export default function PodiatryListPage() {
                 <TableRow key={r.id}
                   // An unassigned reception is marked down its leading edge so it
                   // stands out while scanning the list.
-                  className={`cursor-pointer ${isAssigned(r) ? "" : "border-s-4 border-s-amber-400 bg-amber-50/40 dark:bg-amber-500/5"}`}
-                  onClick={() => router.push(`/${locale}/clinic/podiatry/${r.id}`)}>
-                  <TableCell className="font-mono text-xs">{r.patient?.patientNumber ?? "—"}</TableCell>
+                  className={`relative cursor-pointer ${isAssigned(r) ? "" : "border-s-4 border-s-amber-400 bg-amber-50/40 dark:bg-amber-500/5"}`}>
+                  <TableCell className="font-mono text-xs">
+                    <CaseRowLink href={`/${locale}/clinic/podiatry/${r.id}`} label={r.patient?.patientNumber} />
+                    {r.patient?.patientNumber ?? "—"}
+                  </TableCell>
                   <TableCell>{`${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.trim() || "—"}</TableCell>
                   <TableCell>
                     {isAssigned(r) ? (
@@ -267,9 +267,7 @@ export default function PodiatryListPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button size="icon" variant="ghost" className="h-8 w-8">
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground"><Eye className="h-4 w-4" /></span>
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { CaseRowLink } from "@/components/clinic/case-row-link";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Activity, Users, AlertTriangle } from "lucide-react";
+import { Search, Eye, Activity, Users, AlertTriangle, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +62,6 @@ const fmt = (d: string) => {
 };
 
 export default function ProstheticsListPage() {
-  const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.prosthetics");
   const tCommon = useTranslations("clinic.common");
@@ -79,10 +78,15 @@ export default function ProstheticsListPage() {
   // filters server-side like the delivery range.
   const [completeness, setCompleteness] = useState<"all" | "missing" | "complete">("all");
   const hasMissingFields = completeness === "all" ? undefined : completeness === "missing";
+  // Cases still waiting on a sign-off: the doctor's committee opinion, the
+  // department head's final opinion or the medical director's approval. Worked
+  // out and filtered by the API, like completeness.
+  const [pendingApprovalsOnly, setPendingApprovalsOnly] = useState(false);
   const deliveredRange = {
     deliveredFrom: deliveredFrom || undefined,
     deliveredTo: deliveredTo || undefined,
     hasMissingFields,
+    pendingApprovals: pendingApprovalsOnly || undefined,
   };
   // The level list follows the chosen type; with no type chosen it offers both.
   const levelOptions = typeFilter === "UPPER" ? UPPER_LEVELS
@@ -121,7 +125,7 @@ export default function ProstheticsListPage() {
   const searching = !mineOnly && narrowed;
   const allStatus = statusFilter !== "all" ? statusFilter : undefined;
   const { data: allCases, isLoading: allLoading } = useQuery({
-    queryKey: ["clinic-prosthetics-cases", "all", allStatus, deliveredFrom, deliveredTo, hasMissingFields],
+    queryKey: ["clinic-prosthetics-cases", "all", allStatus, deliveredFrom, deliveredTo, hasMissingFields, pendingApprovalsOnly],
     queryFn: async () => {
       const out: ProstheticsCase[] = [];
       for (let p = 1; p <= 50; p++) {
@@ -145,6 +149,7 @@ export default function ProstheticsListPage() {
     if (mineOnly && statusFilter !== "all" && c.status !== statusFilter) return false;
     // by-practitioner takes no filters, so completeness is applied here for it.
     if (mineOnly && hasMissingFields !== undefined && !!c.hasMissingFields !== hasMissingFields) return false;
+    if (mineOnly && pendingApprovalsOnly && !c.pendingApprovals) return false;
     const types: string[] = Array.isArray(c.amputationType) ? c.amputationType : c.amputationType ? [c.amputationType as any] : [];
     const has = (k: string) => types.some((x) => String(x).toUpperCase() === k);
     // "الطرفان معاً" = الحالة تحمل النوعين؛ وكل نوع منفرداً يشمل هذه الحالات أيضاً.
@@ -257,6 +262,17 @@ export default function ProstheticsListPage() {
             <SelectItem value="complete">{t("filter.completeOnly")}</SelectItem>
           </SelectContent>
         </Select>
+        {(isAdmin() || hasPermission(PERMISSIONS.CLINIC_PROSTHETICS.FILTER_PENDING_APPROVALS)) && (
+          <Button
+            variant={pendingApprovalsOnly ? "default" : "outline"}
+            className="gap-1.5"
+            title={t("filter.pendingApprovalsHint")}
+            onClick={() => { setPendingApprovalsOnly((v) => !v); setPage(1); }}
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            {t("filter.pendingApprovals")}
+          </Button>
+        )}
         {/* تاريخ الخروج من التسليم النهائي — يحصر القائمة بالحالات المسلّمة ضمن المدة. */}
         <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-1">
           <span className="text-xs text-muted-foreground">{t("filter.deliveredDate")}</span>
@@ -315,10 +331,10 @@ export default function ProstheticsListPage() {
               cases.map((c: ProstheticsCase) => (
                 <TableRow
                   key={c.id}
-                  className="cursor-pointer hover:bg-muted/40 transition-colors"
-                  onClick={() => router.push(`/${locale}/clinic/prosthetics/${c.id}`)}
+                  className="relative cursor-pointer hover:bg-muted/40 transition-colors"
                 >
                   <TableCell className="font-mono text-sm whitespace-nowrap">
+                    <CaseRowLink href={`/${locale}/clinic/prosthetics/${c.id}`} label={c.patient?.patientNumber} />
                     {(c as any).caseNumber ?? "—"}
                   </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
@@ -361,11 +377,8 @@ export default function ProstheticsListPage() {
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {fmt(c.createdAt)}
                   </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8"
-                      onClick={() => router.push(`/${locale}/clinic/prosthetics/${c.id}`)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                  <TableCell>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground"><Eye className="h-4 w-4" /></span>
                   </TableCell>
                 </TableRow>
               ))

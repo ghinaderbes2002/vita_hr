@@ -87,6 +87,7 @@ export default function MyAttendancePage() {
               <TableHead>{t("attendance.fields.checkOutTime")}</TableHead>
               <TableHead>{t("attendance.fields.workHours")}</TableHead>
               <TableHead>{t("attendance.fields.lateMinutes")}</TableHead>
+              <TableHead>{t("attendance.fields.earlyLeaveMinutes")}</TableHead>
               <TableHead>{t("attendance.fields.status")}</TableHead>
               <TableHead>البصمة</TableHead>
               <TableHead>{t("attendance.fields.location")}</TableHead>
@@ -102,13 +103,14 @@ export default function MyAttendancePage() {
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                 </TableRow>
               ))
             ) : records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
@@ -134,6 +136,11 @@ export default function MyAttendancePage() {
                   <TableCell>
                     <span className="text-destructive font-medium">
                       {formatLateMinutes(record.lateMinutes)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-amber-600 dark:text-amber-400 font-medium">
+                      {formatLateMinutes(record.earlyLeaveMinutes)}
                     </span>
                   </TableCell>
                   <TableCell>

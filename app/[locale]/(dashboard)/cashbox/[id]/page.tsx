@@ -1,5 +1,6 @@
 "use client";
 
+import { BoxPendingAmounts } from "@/components/features/cashbox/cash-tx-status";
 import { DateRangeFilter, EMPTY_DATE_FILTER, dateFilterParams, type DateFilterValue } from "@/components/features/cashbox/date-range-filter";
 import { useState } from "react";
 import Link from "next/link";
@@ -80,6 +81,7 @@ function CashBoxDetails() {
               {t("fields.custodian")}: {custodianName(box)}
             </p>
             <BoxBalances boxId={box.id} className="pt-1 text-xl" />
+            <BoxPendingAmounts boxId={box.id} />
           </div>
           <div className="flex flex-wrap gap-2">
             <ActionGuard permission={PERMISSIONS.CASHBOX.COUNTS_CREATE}>
@@ -112,7 +114,7 @@ function CashBoxDetails() {
               />
               <DateRangeFilter value={txDates} onChange={(v) => { setTxDates(v); setTxPage(1); }} />
             </div>
-            <TransactionsTable transactions={txData?.items ?? []} isLoading={txLoading} showBox={false} />
+            <TransactionsTable transactions={txData?.items ?? []} isLoading={txLoading} showBox={false} viewBoxId={box.id} />
             {(txData?.totalPages ?? 1) > 1 && (
               <Pagination page={txPage} totalPages={txData!.totalPages} total={txData!.total} limit={LIMIT} onPageChange={setTxPage} />
             )}

@@ -3314,7 +3314,9 @@
         "balance": "Denge",
         "finalEval": "Nihai Değerlendirme",
         "finalDelivery": "Nihai Teslim",
-        "timeline": "Zaman Çizelgesi"
+        "timeline": "Zaman Çizelgesi",
+        "lockedNeedAssessment": "Önce Değerlendirme Bilgileri sekmesini doldurun",
+        "lockedNeedCommittee": "Önce komitenin nihai kararını kaydedin"
       },
       "followUp": {
         "reviewTitle": "Kontrol Programı",
@@ -3538,7 +3540,9 @@
         "chooseManager": "Yöneticiyi seçin",
         "fetchUploadSignature": "İmzayı getir / yükle",
         "chooseManagerFirst": "Önce yöneticiyi seçin",
-        "saveEval": "Değerlendirmeyi Kaydet"
+        "saveEval": "Değerlendirmeyi Kaydet",
+        "missingBeforeReady": "Değerlendirme, vaka ilerletilmeden kaydedilir. Teslime hazır olması için doldurun: {fields}",
+        "savedNotReady": "Kaydedildi. Eksik alanlar olduğu için vaka henüz teslime hazır değil"
       },
       "intake": {
         "title": "Kabul Bilgileri",
@@ -3656,6 +3660,8 @@
         },
         "upperTitle": "Üst Ekstremite Değerlendirmesi",
         "lowerTitle": "Alt Ekstremite Değerlendirmesi",
+        "deptProsthetics": "Protez Bölümü",
+        "deptPhysio": "Fizyoterapi Bölümü",
         "muscleTitle": "Kas Gücü Değerlendirmesi",
         "saveSection": "Kaydet",
         "savedLimbUpper": "Üst ekstremite değerlendirmesi kaydedildi",
@@ -3906,7 +3912,9 @@
         "missingOnly": "Eksik vakalar",
         "completeOnly": "Tamamlanmış vakalar",
         "missingBadge": "Eksik",
-        "missingCount": "{count} eksik alan"
+        "missingCount": "{count} eksik alan",
+        "pendingApprovals": "Onay bekleyenler",
+        "pendingApprovalsHint": "Uzman doktor görüşü, bölüm başkanı görüşü veya tıbbi direktör onayı eksik"
       },
       "table": {
         "patientNumber": "Hasta No.",
@@ -5060,6 +5068,7 @@
           "finalSummaryTitle": "Son Özet",
           "finalSummaryPlaceholder": "Tüm seanslar tamamlandıktan sonra vaka özeti...",
           "saveSummary": "Özeti Kaydet",
+          "summaryRequiredFirst": "Önce nihai özeti doldurup kaydedin",
           "exportPdf": "PDF Dışa Aktar",
           "edit": "Düzenle",
           "addError": "Seans eklenirken bir hata oluştu",
